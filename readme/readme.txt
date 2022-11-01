@@ -6,7 +6,10 @@ For each LSP server, add config to the folder "settings" (folder of user.json Cu
 Config file must be named lsp_*.json ("lsp_" prefix and ".json" suffix).
 
 "Hover dialog" feature: dialog appears when you stop moving the mouse cursor, over some
-identifier, with Ctrl-key pressed (Command-key on macOS).
+identifier, with Ctrl-key pressed (if on macOS: Command-key).
+
+"Definition" / "References" / "Implementation" features: you can call them from the "Hover"
+dialog, or using menu items in "Plugins / LSP Client", or using app's Command Palette.
 
 
 Example for Python
