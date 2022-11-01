@@ -4,12 +4,19 @@ For each language server needs to be installed separately.
 
 For each LSP server, add config to the folder "settings" (folder of user.json CudaText config).
 Config file must be named lsp_*.json ("lsp_" prefix and ".json" suffix).
+See Wiki information about many ready configurations:
+https://wiki.freepascal.org/CudaText_plugins
 
-"Hover dialog" feature: dialog appears when you stop moving the mouse cursor, over some
-identifier, with Ctrl-key pressed (if on macOS: Command-key).
-
-"Definition" / "References" / "Implementation" features: you can call them from the "Hover"
-dialog, or using menu items in "Plugins / LSP Client", or using app's Command Palette.
+"Hover" dialog feature: dialog appears when you stop moving the mouse cursor, over some
+identifier, with Ctrl-key pressed (on macOS: with Command-key).
+"Hover" dialog gives several buttons to call other features of LSP:
+* Definition
+* References
+* Implementation
+* Declaration
+* Type definition
+All these features can also be called from menu "Plugins / LSP Client" or from editor's
+Command Palette (menu "Help / Command palette").
 
 
 Example for Python
