@@ -1381,12 +1381,14 @@ class ServerConfig:
     def on_register(self, dynreg):
         """ process dynamic registration request: RegisterMethodRequest
         """
+        # check for 'documentSelector' in registerOptions
+        # "If set to null the document selector provided on the client side will be used." (c) LSP spec
         reg: Registration
         for reg in dynreg.registrations:
-            if reg.registerOptions and 'documentSelector' not in reg.registerOptions:
-                reg.registerOptions['documentSelector'] = self._default_selector
-            else:
+            if not isinstance(reg.registerOptions, dict):
                 reg.registerOptions = self._default_opts
+            elif 'documentSelector' not in reg.registerOptions:
+                reg.registerOptions['documentSelector'] = self._default_selector
 
         self.capabs.extend(dynreg.registrations)
 
