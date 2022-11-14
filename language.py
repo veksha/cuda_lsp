@@ -100,7 +100,7 @@ CALLABLE_COMPLETIONS = {
     CompletionItemKind.METHOD,
     CompletionItemKind.FUNCTION,
     CompletionItemKind.CONSTRUCTOR,
-    CompletionItemKind.CLASS,
+    #CompletionItemKind.CLASS,
 }
 
 RequestPos = namedtuple('RequestPos', 'h_ed carets target_pos_caret cursor_ed')
@@ -1511,6 +1511,19 @@ class CompletionMan:
         else:
             return s2.lower() in s1.lower()
     
+    def sort(self, item, word):
+        s1 = item.filterText if item.filterText else item.label.strip()
+        s2 = word
+        pos_bracket = s1.find('(')
+        s1 = s1 if pos_bracket == -1 else s1[:pos_bracket]
+        return ( # "not": because False < True
+                not (s1 == s2),
+                not (s1.lower() == s2.lower()),
+                not s1.startswith(s2),
+                not s1.lower().startswith(s2.lower()),
+                s1, # alphabetic order
+                )
+    
     def prepare_complete(self, message_id, items, is_incomplete):
         if self.h_ed != ed.get_prop(PROP_HANDLE_SELF):
             return # wrong editor
@@ -1523,33 +1536,23 @@ class CompletionMan:
         x0,y0, _x1,_y1 = _carets[0]
         
         word1 = word2 = ''
-        if self.word:
+        if any(self.word):
             word1, word2 = self.word
             #filtered_items = items
             filtered_items = list(filter(lambda i: self.filter(i, word1), items))
             #filtered_items = sorted(items, key=lambda i: i.sortText or i.label)
-            filtered_items = sorted(filtered_items,
-                                    key=lambda i:
-                                        (
-                                        i.label == word1,
-                                        word1 in i.label,
-                                        i.label.lower() == word1.lower(),
-                                        i.label.startswith(word1),
-                                        i.label.lower().startswith(word1.lower())
-                                        ),
-                                    reverse=True,
-                                    )
+            filtered_items = sorted(filtered_items, key=lambda i: self.sort(i, word1))
             if len(word1) == 0 and len(word2) > 0: # we are at the start of the word
                 # update cached caret (so it points to the start of the word)
                 self.carets = [(x0,y0,_x1,_y1)]
         else:
-            filtered_items = items
+            filtered_items = sorted(items, key=lambda i: self.sort(i, ''))
 
         return CachedCompletion(self, message_id, items, filtered_items, self.carets, self.h_ed, self.line_str, is_incomplete)
     
     def show_complete(self, message_id, items):
         word1 = ''
-        if self.word:
+        if any(self.word):
             word1, _ = self.word
             
         _colors = app_proc(PROC_THEME_UI_DICT_GET, '')
@@ -1617,7 +1620,7 @@ class CompletionMan:
         x1 = x2 = x0
         y1 = y2 = y0
         word1 = word2 = ''
-        if self.word:
+        if any(self.word):
             word1, word2 = self.word
             x1 = x0-len(word1)
             x2 = x0+len(word2)
