@@ -193,7 +193,7 @@ class Language:
                 root_uri=root_uri,
                 workspace_folders=self.workspace_folders,
                 process_id=os.getpid(),
-                settings=self._cfg["settings"]
+                settings=expand_dict_dots(self._cfg["settings"])
             )
             self._start_server()
         return self._client
@@ -1463,7 +1463,7 @@ class ServerConfig:
         """
         settings = cfg.get('settings', {})
         if req.section:
-            return settings.get(req.section, {})
+            return get_dict_section(expand_dict_dots(settings), req.section)
         else:
             return settings
 
@@ -1761,3 +1761,30 @@ def parse_headers(fp, _class=HTTPMessage):
     hstring = header_bytes.decode('iso-8859-1')
     return email.parser.Parser(_class=_class).parsestr(hstring), header_bytes, not_headers
 
+def expand_dict_dots(a):
+    """Converts dictionary with keys like "pylsp.plugins.flake8.enabled": true
+    to "pylsp": { "plugins": { "flake8": { "enabled": true } } }
+    """
+    from functools import reduce
+    if not isinstance(a, dict):  return a
+    output = {}
+    for key, value in a.items():
+        path = key.split('.')
+        target = reduce(lambda d, k: d.setdefault(k, {}), path[:-1], output)
+        if path[-1] in target and isinstance(target[path[-1]], dict):
+            target[path[-1]].update(expand_dict_dots(value))
+        else:
+            target[path[-1]] = expand_dict_dots(value)
+    return output
+
+def get_dict_section(j, path):
+    """Gets dictionary section by path like "python.analysis"
+    Dot is a delimiter.
+    """
+    temp_json = j
+    for section in path.split('.'):
+        if section not in temp_json.keys():
+            break
+        else:
+            temp_json = temp_json[section]
+    return temp_json
