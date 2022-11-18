@@ -1,3 +1,6 @@
+2022.11.18
++ add: support for dot-path notation in Server-specific options
+
 2022.10.28
 - fix: error detecting project dir if project has file(s) in its root
 - fix: macros TM_xxxx were not expanded in snippets

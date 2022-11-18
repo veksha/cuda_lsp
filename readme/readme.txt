@@ -93,6 +93,13 @@ b) project config myname.cuda-proj-lsp
     }
   }
 
+You can also use dot-path notation to specify sections in simple format:
+  ...
+  "settings": {
+    "python.analysis.typeCheckingMode": "off",
+  }
+  ...
+ 
 
 Plugin options
 --------------
