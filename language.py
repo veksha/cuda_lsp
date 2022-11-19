@@ -1499,7 +1499,7 @@ class CompletionMan:
         
         _carets = ed.get_carets()
         x0,y0,_,_ = _carets[0]
-        self.word = get_word(x0, y0)
+        self.word = get_word(x0, y0) or ('','')
 
     def filter(self, item, word):
         s1 = item.filterText if item.filterText else item.label
