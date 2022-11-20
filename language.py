@@ -15,6 +15,7 @@ from wcmatch.glob import globmatch, GLOBSTAR, BRACE
 
 from cudatext import *
 import cudax_lib as appx
+import cudatext_cmd as cmds
 
 from cudax_lib import get_translation
 _ = get_translation(__file__)  # I18N
@@ -73,6 +74,7 @@ import datetime
 
 LOG = False
 LOG_CACHE = False
+DEBUG_COMPLETION = False
 DBG = LOG
 LOG_NAME = 'LSP'
 
@@ -105,6 +107,8 @@ CALLABLE_COMPLETIONS = {
 
 RequestPos = namedtuple('RequestPos', 'h_ed carets target_pos_caret cursor_ed')
 CachedCompletion = namedtuple('CachedCompletion', 'obj message_id items filtered_items carets h_ed line_str is_incomplete')
+CompletionEdit = namedtuple('CompletionEdit', 'replace_range replace_text x y word1 word2 is_callable is_snippet cached_x')
+Test = namedtuple('Test', 'initial_text replace_range replace_text result_text is_callable is_snippet')
 
 GOTO_TITLES = {
     events.Definition:      _('Go to: definition'),
@@ -713,6 +717,10 @@ class Language:
 
 
     def on_complete(self, eddoc):
+        # if text selection present and ctrl+space is pressed: start debug tests
+        if DEBUG_COMPLETION and ed.get_carets()[0][3] != -1:
+            debug_completion()
+            return True
         
         def can_use_cached():
             on_complete_kind = app_proc(PROC_GET_AUTOCOMPLETION_INVOKE, 0)
@@ -1500,7 +1508,99 @@ class CompletionMan:
         _carets = ed.get_carets()
         x0,y0,_,_ = _carets[0]
         self.word = get_word(x0, y0) or ('','')
+        
+    def apply_completion_edit(edit: CompletionEdit):
+        non_word_chars = get_nonwords_chars()
+        text = edit.replace_text
+        line_txt = ed.get_text_line(edit.y)
+        is_bracket_follows = line_txt[edit.x+len(edit.word2):].strip()[:1] == '('
+        try:
+            is_destructor = line_txt[edit.x-len(edit.word1)-1] == '~'
+        except:
+            is_destructor = False
+        if is_destructor and text[0] == '~':
+            text = text[1:]
 
+        pos = 0
+        # remove chars present in replace_text from non_word_chars
+        non_word_chars = ''.join([c for c in non_word_chars if c not in edit.replace_text])
+        non_word_chars += '()' # but keep these always
+        
+        for i, char in enumerate(line_txt[edit.cached_x:]):
+            if char in (non_word_chars+' '):      break
+            else:                           pos += 1
+        x1 = min(edit.replace_range[0], edit.cached_x)
+        x2 = max(edit.replace_range[2], edit.cached_x+pos)
+        ed.delete(x1, edit.y, x2, edit.y)
+        
+        has_brackets = all(b in text for b in '()')
+        if is_bracket_follows and has_brackets: # remove "(params)" if bracket follows
+            text = re.sub('\([^)]*\);?$', '', text)
+            has_brackets = False
+        lex = ed.get_prop(PROP_LEXER_FILE, '')
+        
+        last_char_nonword = text[-1] in non_word_chars # TODO: check why this is needed
+        if (
+                CompletionMan.auto_append_bracket and not last_char_nonword
+                and not has_brackets and edit.is_callable
+                and not is_bracket_follows and ('Bash' not in lex)
+           ):
+            text += '()'
+            
+        # to support virtual caret, add padding
+        padding = ' '*(x2-len(line_txt)) if len(line_txt) < x2 else ''
+        if padding:
+            ed.set_caret(*ed.insert(x1, edit.y, padding))
+        
+        # insert completion
+        if edit.is_snippet:
+            snippet = Snippet(text=text.split('\n'), t=VS_SNIPPET)
+            snippet.insert(ed) # snippet.py automatically
+        else:
+            new_caret = ed.insert(*ed.get_carets()[0][:2], text)
+            ed.set_caret(*new_caret)
+        
+        # move caret inside "()" if snippet is very simple, e.g. "func()"
+        if re.match('^\w+\(\)$', text) and not is_destructor:
+            new_caret = ed.get_carets()[0]
+            ed.set_caret(new_caret[0]-1, new_caret[1])
+        
+    def do_test(test: Test):
+        """Test which prevents regressions of autocomplete feature
+        """
+        ed.set_text_all(test.initial_text)
+        cr_x, cr_y, _, _ = ed.get_carets()[0]
+        
+        line = ed.get_text_line(cr_y)
+        if line.count('|') not in (1,2):
+            print("ERROR: do_test: place 1 or 2 caret symbols somewhere:", test.initial_text)
+            return False
+        cr_pos = cached_pos = line.find('|')
+        ed.set_caret(cr_pos, cr_y)
+        ed.cmd(cmds.cCommand_KeyDelete)
+        line = line[:cr_pos] + line[cr_pos+1:]
+        cr_pos = line.find('|')
+        if cr_pos == -1: 
+            cr_pos = cached_pos
+        else:
+            ed.set_caret(cr_pos, cr_y)
+            ed.cmd(cmds.cCommand_KeyDelete)
+        
+        word = get_word(cr_pos, cr_y)
+        (word1, word2) = word if word else ('', '')
+        
+        edit = CompletionEdit(test.replace_range, test.replace_text, cr_pos, cr_y, word1, word2, test.is_callable, test.is_snippet ,cached_pos)
+        CompletionMan.apply_completion_edit(edit)
+        
+        line = ed.get_text_line(cr_y)
+        type_str = "  snippet" if test.is_snippet else "plaintext"
+        if line == test.result_text:
+            print(f"passed {type_str}: {test.initial_text}")
+            return True
+        else:
+            print(f"ERROR: failed {type_str}: {test.initial_text} ===> {line} (must be {test.result_text})")
+            return False
+        
     def filter(self, item, word):
         s1 = item.filterText if item.filterText else item.label
         s2 = word
@@ -1627,62 +1727,33 @@ class CompletionMan:
         
         line_txt = ed.get_text_line(y0)
         is_callable = item.kind  and  item.kind in CALLABLE_COMPLETIONS
-        is_bracket_follows = line_txt[x2:].strip()[:1] == '('
-        
-        ed.replace(x1,y0,x2,y0,' '*(x2-x1)) # now replace word under caret with spaces!
+        is_snippet = item.insertTextFormat is not None and item.insertTextFormat == InsertTextFormat.SNIPPET
 
         cached_x = self.carets[0][0]
         cached_x_diff = x0-cached_x
         if item.textEdit:
             x1,y1,x2,y2 = EditorDoc.range2carets(item.textEdit.range)
-            corrected_x2 = x2 + cached_x_diff # correction of cached (outdated) coords (only x2 is enough?)
-            if corrected_x2+len(word2) > x0+len(word2): # check if we need to add len(word2) offset
-                x2 = corrected_x2
-            else:
-                x2 = corrected_x2 + len(word2)
             text = item.textEdit.newText
         elif item.insertText:   text = item.insertText
         else:                   text = item.label
         
-        is_snippet = item.insertTextFormat and item.insertTextFormat == InsertTextFormat.SNIPPET
+        # useful logging (when DEBUG_COMPLETION is enabled)
+        if DEBUG_COMPLETION:
+            if is_snippet:   print("SNIPPET", item)
+            else:            print("PLAIN TEXT", item)
+            # also print test template. can be handy to create new test.
+            initial_text = line_txt[:x0]+'|'+line_txt[x0:]
+            if cached_x != x0:
+                initial_text = initial_text[:cached_x]+'|'+initial_text[cached_x:]
+            leading_spaces = len(line_txt) - len(line_txt.lstrip(' '))
+            initial_text = initial_text[leading_spaces:]
+            test_str = "Test('{}', ({},{},{},{}), '{}', 'PASTE_RESULT_HERE', {}, {})".format( initial_text,
+                        x1-leading_spaces, 0, x2-leading_spaces, 0, text, is_callable, is_snippet)
+            print(test_str)
         
-        has_brackets = all(b in text for b in '()')
-        if is_bracket_follows and has_brackets: # remove "(params)" if bracket follows
-            text = re.sub('\([^)]*\);?$', '', text)
-            
-        last_char_nonword = text[-1:] in get_nonwords_chars()
-        brackets_inserted = False
-        if (
-                CompletionMan.auto_append_bracket and not last_char_nonword
-                and not has_brackets and is_callable
-                and not is_bracket_follows and ('Bash' not in lex)
-           ):
-            text += '()'
-            brackets_inserted = True
+        edit = CompletionEdit((x1, y1, x2, y2), text, x0, y0, word1, word2, is_callable, is_snippet, cached_x) 
+        CompletionMan.apply_completion_edit(edit)
         
-        if is_snippet:
-            snippet = Snippet(text=text.split('\n'), t=VS_SNIPPET)
-            ed.delete(x1,y1,x2,y2) # delete range
-            snippet.insert(ed)
-            
-            # move caret inside "()" if snippet is very simple, e.g. "func()"
-            if re.match('^\w+\(\)$', text):
-                new_caret = ed.get_carets()[0]
-                ed.set_caret(new_caret[0]-1, new_caret[1])
-            #print("NOTE: Cuda_LSP: snippet was inserted:",text)
-        else: # not snippet (PLAINTEXT)
-            padding = ' '*(x2-len(line_txt)) if len(line_txt) < x2 else ''
-            if padding: # to support virtual caret
-                ed.insert(x1,y1, padding)
-                x2 += len(padding)
-            new_caret = ed.replace(x1,y1,x2,y2, text)
-            # move caret at ~end of inserted text
-            if new_caret:
-                if brackets_inserted:
-                    ed.set_caret(new_caret[0] - 1,  new_caret[1])
-                else:
-                    ed.set_caret(*new_caret)
-
         # additinal edits
         if item.additionalTextEdits:
             for edit in item.additionalTextEdits:
@@ -1788,3 +1859,47 @@ def get_dict_section(j, path):
         else:
             temp_json = temp_json[section]
     return temp_json
+
+def debug_completion():
+    """Create and run tests to prevent regressions of autocomplete feature.
+    Add more tests here if necessary.
+    Used only with DEBUG_COMPLETION = True
+    """
+    ed.cmd(cmds.cmd_FileNew)
+    tests = []
+    # in these tests "|" symbol means caret
+    # two such symbols means that first one is caret pos from cached data and second one is actual caret pos
+    #                    initial_text     range    replace_text     result                                callable  snippet
+    tests.append( Test('#include "|"', (10,0,11,0), 'DbgHelp.h"', '#include "DbgHelp.h"',                    False, False) ) # cpp
+    tests.append( Test('#include "std|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',                 False, False) ) # cpp
+    tests.append( Test('    cout|', (4,0,8,0), 'std::cout', '    std::cout',                                 False, False) ) # cpp
+    tests.append( Test('    std::c|ou', (9,0,10,0), 'cout', '    std::cout',                                 False, False) ) # cpp
+    tests.append( Test('    pr|intln("hello, world")', (4,0,11,0), 'print', '    print("hello, world")',     False, False) ) # scala
+    tests.append( Test('System.out.|pr|int("The sum is: " + sum);', (11,0,16,0), 'print',
+                         'System.out.print("The sum is: " + sum);',                                          True,  True ) ) # java
+    tests.append( Test('pr|', (0,0,2,0), 'print', 'print()',                                                 True,  False) ) # python
+    tests.append( Test('pr|int(test_str)', (0,0,5,0), 'print', 'print(test_str)',                            False, False) ) # python
+    tests.append( Test('pr|in|t(test_str)', (0,0,5,0), 'print', 'print(test_str)',                           True,  False) ) # python
+    tests.append( Test('import pr|e|', (0,0,9,0), "import { PredicateResult$1 } from 'web-tree-sitter'",
+                                                  "import { PredicateResult } from 'web-tree-sitter'",       False,  True) ) # typescript
+    tests.append( Test('import |pr|', (0,0,6,0),  "import { PredicateResult$1 } from 'web-tree-sitter'",
+                                                  "import { PredicateResult } from 'web-tree-sitter'",      False,  True) ) # typescript
+    tests.append( Test("import { Logger } from '|vs|'", (24,0,26,0), 'vscode-languageserver',
+                                                  "import { Logger } from 'vscode-languageserver'",          False, False) ) # typescript
+    tests.append( Test('f|u|', (0,0,1,0), 'func1()', 'func1()',                                              True,  True ) ) # cpp
+    tests.append( Test('#include "Dbg|hel|', (10,0,13,0), 'DbgHelp.h"', '#include "DbgHelp.h"',              False, False) ) # cpp
+    tests.append( Test('#include "std|io|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',              False, False) ) # cpp
+    tests.append( Test('select|', (0,0,6,0), 'select', 'select()',                                           True,   True) ) # lua
+    tests.append( Test('~p|l|Player()', (1,0,2,0), 'Player', '~Player()',                                    False, False) ) # cpp
+    tests.append( Test('~~P|layer()', (2,0,3,0), '~Player()', '~~Player()',                                 True,   True) ) # cpp
+    tests.append( Test('~P|layer()', (1,0,2,0), '~Player()', '~Player()',                                    True,   True) ) # cpp
+    tests.append( Test('_Analysis_m|ode_(wqe qwe qw)', (0,0,11,0), '_Analysis_mode_(${1:mode})', '_Analysis_mode_(wqe qwe qw)', False, True) ) # cpp
+    
+    
+    failed = 0
+    for test in tests:
+        if not CompletionMan.do_test(test):     failed += 1
+    print('failed:', failed)
+        
+    ed.set_text_all('')
+    ed.cmd(cmds.cmd_FileClose)
