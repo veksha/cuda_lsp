@@ -183,6 +183,12 @@ class SignatureHelp(Event):
         return self.signatures, self.activeSignature, self.activeParameter
 
 
+class SemanticTokens(Event):
+    message_id: t.Optional[Id]
+    resultId: t.Optional[str]
+    data: t.List[int]
+    
+
 class Definition(Event):
     message_id: t.Optional[Id]
     result: t.Union[

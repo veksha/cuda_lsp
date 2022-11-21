@@ -30,7 +30,7 @@ from .util import (
 #import cuda_project_man
 #from .book import DocBook
 
-from .language import CompletionMan
+from .language import CompletionMan, Language
 
 LOG = False
 LOG_NAME = 'LSP'
@@ -71,6 +71,10 @@ opt_hard_filter = False
 opt_use_cache = True
 opt_servers_shutdown_max_time = 2 # seconds
 SERVERS_SHUTDOWN_CHECK_PERIOD = 0.1 # seconds
+
+opt_enable_semantic_tokens = False
+opt_semantic_colors_light = '#BC7676,#15AD00,#BF00AF,#BF00AF,,,#FF2436,,#d79e3f,#00B3B7'
+opt_semantic_colors_dark = '#E38F8F,#0f0,#EB67E0,#EB67E0,,,#FF2436,,#ffe226,#0ff'
 
 """
 file:///install.inf
@@ -311,6 +315,8 @@ class Command:
 
                 if lang.tree_enabled:
                     lang.update_tree(doc)
+                if opt_enable_semantic_tokens:
+                    lang.request_semantic_tokens(doc)
 
     def on_focus(self, ed_self):
         doc = self.book.get_doc(ed_self)
@@ -363,6 +369,12 @@ class Command:
         else:    # create doc if new lexer is supported by lsp server
             self.on_open(ed_self)
 
+    def on_change(self, ed_self):
+        if opt_enable_semantic_tokens:
+            doc = self.book.get_doc(ed_self)
+            if doc and doc.lang:
+                doc.lang.request_semantic_tokens(doc)
+        
     def on_change_slow(self, ed_self):
         doc = self.book.get_doc(ed_self)
         if doc and doc.lang:
@@ -477,7 +489,12 @@ class Command:
 
             PanelLog.on_theme_change()
             SignaturesDialog.on_theme_change()
-
+            
+            if opt_enable_semantic_tokens:
+                for edt in get_visible_eds():
+                    doc = self.book.get_doc(edt)
+                    if doc and doc.lang:
+                        doc.lang.request_semantic_tokens(doc)
 
     def on_key(self, ed_self, key, state):
         # VK_ESCAPE==27
@@ -734,6 +751,9 @@ class Command:
         global opt_hard_filter
         global opt_use_cache
         global opt_servers_shutdown_max_time
+        global opt_enable_semantic_tokens
+        global opt_semantic_colors_light
+        global opt_semantic_colors_dark
 
         # general cfg
         if os.path.exists(fn_config):
@@ -763,7 +783,13 @@ class Command:
             opt_use_cache = j.get('use_cache', opt_use_cache)
             CompletionMan.use_cache = opt_use_cache
             opt_servers_shutdown_max_time = j.get('servers_shutdown_max_time', opt_servers_shutdown_max_time)
-
+            
+            opt_enable_semantic_tokens = j.get('enable_semantic_tokens', opt_enable_semantic_tokens)
+            opt_semantic_colors_light = j.get('semantic_colors_light', opt_semantic_colors_light)
+            Language.semantic_colors_light = opt_semantic_colors_light
+            opt_semantic_colors_dark = j.get('semantic_colors_dark', opt_semantic_colors_dark)
+            Language.semantic_colors_dark = opt_semantic_colors_dark
+            
             opt_enable_code_tree = j.get('enable_code_tree', opt_enable_code_tree)
             opt_tree_types_show = j.get('tree_types_show', opt_tree_types_show)
 
@@ -849,6 +875,9 @@ class Command:
             'hard_filter':               opt_hard_filter,
             'use_cache':                 opt_use_cache,
             'servers_shutdown_max_time': opt_servers_shutdown_max_time,
+            'enable_semantic_tokens':    opt_enable_semantic_tokens,
+            'semantic_colors_light':     opt_semantic_colors_light,
+            'semantic_colors_dark':      opt_semantic_colors_dark
         }
         if opt_manual_didopen is not None:
             j['manual_didopen'] = opt_manual_didopen
