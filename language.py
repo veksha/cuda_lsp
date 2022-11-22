@@ -1534,7 +1534,7 @@ class CompletionMan:
         ed.delete(x1, edit.y, x2, edit.y)
         
         has_brackets = all(b in text for b in '()')
-        if is_bracket_follows and has_brackets: # remove "(params)" if bracket follows
+        if is_bracket_follows or has_brackets: # remove "(params)" if bracket follows
             text = re.sub('\([^)]*\)(;|\$\d)?$', '', text)
             has_brackets = False
         lex = ed.get_prop(PROP_LEXER_FILE, '')
@@ -1895,6 +1895,7 @@ def debug_completion():
     tests.append( Test('~P|layer()', (1,0,2,0), '~Player()', '~Player()',                                    True,   True) ) # cpp
     tests.append( Test('_Analysis_m|ode_(wqe qwe qw)', (0,0,11,0), '_Analysis_mode_(${1:mode})', '_Analysis_mode_(wqe qwe qw)', False, True) ) # cpp
     tests.append( Test("ed.set_tex|t_all('')", (3,0,15,0), 'set_text_all(${1:text})$0', "ed.set_text_all('')", True, True) ) # python (jedi-language-server)
+    tests.append( Test('events.Publish|Diagnostics', (7,0,25,0), 'PublishDiagnostics($0)', 'events.PublishDiagnostics', False, True) ) # python (jedi-language-server)
     
     
     failed = 0
