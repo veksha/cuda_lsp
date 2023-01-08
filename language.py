@@ -1194,6 +1194,7 @@ class DiagnosticsMan:
                     ed.decor(DECOR_SET, line=nline, image=decor_im_map[decor_severity], text=tooltip, tag=DIAG_BM_TAG)
                 else:
                     ed.bookmark(BOOKMARK_SET, nline=nline, nkind=kind, text=text, tag=DIAG_BM_TAG)
+            self.logger._scroll_to_end()
             #end for line_diags
 
             # underline error text ranges
