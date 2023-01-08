@@ -1343,6 +1343,9 @@ class ServerConfig:
                 if isinstance(_save, dict):
                     _opts.update(_save)
                 self.capabs.append(Registration(id='0', method=METHOD_DID_SAVE, registerOptions=_opts))
+        
+        if isinstance(docsync, int):
+            self.capabs.append(Registration(id='0', method=METHOD_DID_SAVE, registerOptions=self._default_opts))
 
         #  OPEN, CLOSE
         if is_openclose:
