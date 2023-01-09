@@ -589,9 +589,9 @@ class PanelLog:
 
     def log(self, msg):   # events: ShowMessage, LogMessage
         severity_str = SEVERITY_MAP[msg.type.value]
-        self.log_str(msg.message, type_=type(msg), severity=severity_str)
+        self.log_str(msg.message, type_=type(msg), severity=severity_str, scroll=True)
 
-    def log_str(self, s, type_, severity=SEVERITY_NA):
+    def log_str(self, s, type_, severity=SEVERITY_NA, scroll=False):
         if s and s[-1] != '\n':
             s += '\n'
 
@@ -599,7 +599,7 @@ class PanelLog:
 
         self._msgs.append(lm)
         if self._filter_msg(lm):
-            self._append_memo_msg(lm)
+            self._append_memo_msg(lm, scroll=scroll)
 
         timer_proc(TIMER_START_ONE, self._update_counts, 500)
         self._update_sidebar()
@@ -641,10 +641,10 @@ class PanelLog:
     def _scroll_to_end(self, *args, **vargs):
         self._memo.cmd(cmds.cCommand_GotoTextEnd)
 
-    def _append_memo_msg(self, msg):
+    def _append_memo_msg(self, msg, scroll=False):
         _nline = self._memo_pos[1]
         newpos = self._memo.insert(*self._memo_pos, msg.msg)
-        self._scroll_to_end()
+        scroll and self._scroll_to_end()
 
         if newpos is not None:
             self._memo_pos = newpos
