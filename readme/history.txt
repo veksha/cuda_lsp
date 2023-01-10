@@ -1,12 +1,15 @@
-2022.11.18
+2023.01.10 (by @veksha)
++ add: avoid UI freeze when plugin adds many lines to log panel
++ add: better support 'didSave' server capability
+
+2022.11.18 (by @veksha)
 + add: support for dot-path notation in Server-specific options
 
-2022.10.28
+2022.10.28 (by Alexey T.)
 - fix: error detecting project dir if project has file(s) in its root
 - fix: macros TM_xxxx were not expanded in snippets
 
-2022.10.23
-Patches by @veksha
+2022.10.23 (by @veksha)
 - fix: problem with TypeScript: wrong autocompletion of "import appendFile" + unwanted brackets
 - fix: insertion of single item with "autocomplete_commit_single_item":true did not work
 - fix: with "ui_scale":125 not all buttons in hover dialog were visible
@@ -14,8 +17,7 @@ Patches by @veksha
 - fix: problems with Lua server
 - fix: problem with Pyright server: must enable cache for this server
 
-2022.10.16
-Patches by @veksha
+2022.10.16 (by @veksha)
 + add: simple caching
 + add: new option: "auto_append_bracket" (and smart bracket insertion)
 + add: new options: "hard_filter" and "use_cache"
@@ -23,36 +25,36 @@ Patches by @veksha
 + add: do not search in function params, when filtering autocompletion listbox
 + add: shorten item 'kinds': 'function'->'func', 'variable'->'var' etc
 
-2022.10.15
-+ add: when "function params" text is too long, e.g. for 'open(...)' in Python, then tooltip wraps (by @veksha)
+2022.10.15 (by @veksha)
++ add: when "function params" text is too long, e.g. for 'open(...)' in Python, then tooltip wraps
 
-2022.10.13
-- fix: Windows: compare filenames which differ in casing (by @veksha)
-- fix: handling of untitled tabs; bonus: LSP goto features (definition/references) are now working inside unsaved tabs too (by @veksha)
-- fix: too many errors when server's .exe file is missed (by @veksha)
-- fix: in some cases, gutter icons appear black / not inited (by @veksha)
+2022.10.13 (by @veksha)
+- fix: Windows: compare filenames which differ in casing
+- fix: handling of untitled tabs; bonus: LSP goto features (definition/references) are now working inside unsaved tabs too
+- fix: too many errors when server's .exe file is missed
+- fix: in some cases, gutter icons appear black / not inited
 - fix: on_state must not be 'lazy'
 
-2022.09.20
-+ add: support 'snippets' from servers, re-using code from 'Snippets' plugin (by @veksha)
+2022.09.20 (by @veksha)
++ add: support 'snippets' from servers, re-using code from 'Snippets' plugin
 
-2022.09.16
-- fix: bug with Bash server (by @veksha)
+2022.09.16 (by @veksha)
+- fix: bug with Bash server
 
-2022.09.07
-+ add: all new tooltip for the "show function-hint" command / Ctrl+Shift+Space (by @veksha)
-+ add: better reaction to Left/Right arrows in completion listbox; needs CudaText 1.170+ (by @veksha) 
-+ add: for option "lint_type":"d", plugin adds tooltips for gutter-decor-icons; it needs CudaText 1.169.2+ (by @veksha)
+2022.09.07 (by @veksha)
++ add: all new tooltip for the "show function-hint" command / Ctrl+Shift+Space
++ add: better reaction to Left/Right arrows in completion listbox; needs CudaText 1.170+ 
++ add: for option "lint_type":"d", plugin adds tooltips for gutter-decor-icons; it needs CudaText 1.169.2+
 
-2022.08.25
-+ add: use new CudaText API to show tooltips for guttter icons, when "lint_type" option is set to "d" (by @veksha)
+2022.08.25 (by @veksha)
++ add: use new CudaText API to show tooltips for guttter icons, when "lint_type" option is set to "d"
 
-2022.06.16
-+ add: if lsp_xxx.json contains both "cmd_xxx" and "tcp_port", plugin runs the server and then listens to TCP port (by @veksha)
-- fix: bug which prevented work of PHP LSP server (by @veksha)
+2022.06.16 (by @veksha)
++ add: if lsp_xxx.json contains both "cmd_xxx" and "tcp_port", plugin runs the server and then listens to TCP port
+- fix: bug which prevented work of PHP LSP server
 
-2022.06.09
-- fix: hover hint dialog and autocompletion dialog could show up at the same time causing various bugs (by @veksha)
+2022.06.09 (by @veksha)
+- fix: hover hint dialog and autocompletion dialog could show up at the same time causing various bugs
 
 2022.05.20
 + add: Escape-key in Hover dialog closes the dialog (by Alexey T.)
