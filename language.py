@@ -1166,8 +1166,14 @@ class DiagnosticsMan:
                     if not filename_added:
                         filename_added = True
                         fn = ed.get_filename()
-                        self.logger.log_str(f"File: {fn}", type_=TYPE_DIAG, severity=SEVERITY_MAP[d.severity])
-                    self.logger.log_str(f"Line {d.range.start.line+1}: {text}", type_=TYPE_DIAG, severity=SEVERITY_MAP[d.severity])
+                        self.logger.log_str(f"File: {fn}",
+                            type_=TYPE_DIAG, severity=SEVERITY_MAP[d.severity],
+                            update_memo=False # _update_memo() will be called after the loop
+                        )
+                    self.logger.log_str(f"Line {d.range.start.line+1}: {text}",
+                        type_=TYPE_DIAG, severity=SEVERITY_MAP[d.severity],
+                        update_memo=False # _update_memo() will be called after the loop
+                    )
 
                 # gather err ranges
                 for d in diags:
@@ -1194,6 +1200,7 @@ class DiagnosticsMan:
                     ed.decor(DECOR_SET, line=nline, image=decor_im_map[decor_severity], text=tooltip, tag=DIAG_BM_TAG)
                 else:
                     ed.bookmark(BOOKMARK_SET, nline=nline, nkind=kind, text=text, tag=DIAG_BM_TAG)
+            self.logger._update_memo() # make msgs now appear in memo
             self.logger._scroll_to_end()
             #end for line_diags
 
