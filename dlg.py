@@ -581,25 +581,30 @@ class PanelLog:
         self._reset_memo()
         self._memo.decor(DECOR_DELETE_BY_TAG, tag=PANEL_LOG_TAG)
 
-        for msg in self._msgs:
-            if self._filter_msg(msg):
-                self._append_memo_msg(msg)
-
-        self._memo.cmd(cmds.cmd_RepaintEditor)
+        self._append_memo_msgs([msg for msg in self._msgs if self._filter_msg(msg)])
+        
+        ## some bugs workarounds:
+        # make sure ..line_top is never greater then ..line_count
+        if self._memo.get_prop(PROP_LINE_TOP) >= self._memo.get_line_count()-1:
+            self._memo.set_prop(PROP_LINE_TOP, self._memo.get_line_count()-1)
+        else:
+            # repaint bug workaround:
+            # this will repaint scrollbar/editor (after removing a lot of lines it can be needed)
+            self._memo.set_prop(PROP_LINE_TOP, self._memo.get_prop(PROP_LINE_TOP))
+        ##
 
     def log(self, msg):   # events: ShowMessage, LogMessage
         severity_str = SEVERITY_MAP[msg.type.value]
         self.log_str(msg.message, type_=type(msg), severity=severity_str, scroll=True)
 
-    def log_str(self, s, type_, severity=SEVERITY_NA, scroll=False):
+    def log_str(self, s, type_, severity=SEVERITY_NA, scroll=False, update_memo=True):
         if s and s[-1] != '\n':
             s += '\n'
 
         lm = LogMsg(s, type=type_, severity=severity)
 
         self._msgs.append(lm)
-        if self._filter_msg(lm):
-            self._append_memo_msg(lm, scroll=scroll)
+        update_memo and self._update_memo()
 
         timer_proc(TIMER_START_ONE, self._update_counts, 500)
         self._update_sidebar()
@@ -641,6 +646,25 @@ class PanelLog:
     def _scroll_to_end(self, *args, **vargs):
         self._memo.cmd(cmds.cCommand_GotoTextEnd)
 
+    def _append_memo_msgs(self, msgs, scroll=False):
+        if not msgs:
+            return
+        # calculate line positions (for decor)
+        positions = []
+        for msg in msgs:
+            line_cnt = len(msg.msg.strip().split('\n')) # message can be multiline
+            positions.append(self._memo_pos[1]) # append current position
+            self._memo_pos = (0, self._memo_pos[1] + line_cnt) # update insertion point
+
+        # insert all messages in one go (fast!)
+        newpos = self._memo.insert(*self._memo_pos, ''.join([msg.msg for msg in msgs]))
+        
+        # decor
+        for n,msg in enumerate(msgs):
+            _nline = positions[n]
+            _imind = self._severity_ims[msg.severity]
+            self._memo.decor(DECOR_SET, line=_nline, image=_imind, tag=PANEL_LOG_TAG)
+        
     def _append_memo_msg(self, msg, scroll=False):
         _nline = self._memo_pos[1]
         newpos = self._memo.insert(*self._memo_pos, msg.msg)
