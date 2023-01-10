@@ -1,6 +1,6 @@
 2023.01.10 (by @veksha)
-+ add: avoid UI freeze when plugin adds many lines to log panel
-+ add: better support 'didSave' server capability
++ add: avoid UI freeze (1-2 sec) when plugin adds many lines to log panel
+- fix: better support 'didSave' server capability
 
 2022.11.18 (by @veksha)
 + add: support for dot-path notation in Server-specific options
