@@ -75,7 +75,7 @@ class Hint:
 
         dlg_proc(h, DLG_PROP_SET, prop={
                 'w': FORM_W + 2*FORM_GAP,
-                'border': False,
+                'border': DBORDER_NONE,
                 'color': color_form_bg,
                 # doesn't work well with embedded Editor -- using timer hide_check_timer()
                 #'on_mouse_exit': cls.dlgcolor_mouse_exit,
