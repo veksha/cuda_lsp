@@ -79,7 +79,7 @@ def path_to_uri(path):
     return pathlib.Path(path).as_uri()
 
 def ed_uri(ed):
-    fn = ed.get_filename()
+    fn = ed.get_filename('*') # '*' get filepath for image/binary tabs too
     if fn:
         #return 'file://'+ed.get_filename()
         return path_to_uri(fn)
