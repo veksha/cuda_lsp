@@ -71,3 +71,5 @@
 * hard_filter - autocompletion items will be filtered more strictly (only from beginning of the word and only same letter case).
 
 * use_cache - simple caching of autocompletion results. improves speed.
+
+* servers_shutdown_max_time - maximum amount of seconds to wait for LSP servers to shut down. default is 2 seconds. user can set this to 0 to improve CudaText's shutdown speed. use at your own risk.
