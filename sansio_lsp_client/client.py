@@ -9,6 +9,7 @@ from .events import (
     ResponseError,
     Initialized,
     Completion,
+    SemanticTokens,
     ServerRequest,
     Shutdown,
     PublishDiagnostics,
@@ -334,6 +335,10 @@ class Client:
             event = parse_obj_as(MDocumentSymbols, response)
             event.message_id = response.id
 
+        elif request.method == "textDocument/semanticTokens/full":
+            event = parse_obj_as(SemanticTokens, response.result)
+            event.message_id = response.id
+
         #GOTOs
         elif request.method == "textDocument/definition":
             event = parse_obj_as(Definition, response)
@@ -562,6 +567,19 @@ class Client:
         return self._send_request(method="textDocument/completion", params=params)
 
 # NEW #####################
+
+    def semanticTokens(
+            self,
+            text_document_position: TextDocumentPosition,
+            #previousResultId: str
+            # WorkDoneProgressParams
+    ) -> int:
+        assert self._state == ClientState.NORMAL
+        return self._send_request(
+            method="textDocument/semanticTokens/full",
+            params=text_document_position.dict(),
+        )
+
     def hover(
             self,
             text_document_position: TextDocumentPosition,

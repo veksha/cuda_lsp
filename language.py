@@ -17,7 +17,7 @@ from cudatext import *
 import cudax_lib as appx
 import cudatext_cmd as cmds
 
-from cudax_lib import get_translation
+from cudax_lib import get_translation, html_color_to_int
 _ = get_translation(__file__)  # I18N
 
 from .util import (
@@ -120,6 +120,9 @@ GOTO_TITLES = {
 
 
 class Language:
+    semantic_colors_light = None
+    semantic_colors_dark = None
+    
     def __init__(self, cfg, cmds=None, lintstr='', underline_style=None, state=None):
         self._shutting_down = None  # scheduled shutdown when not yet initialized
 
@@ -509,6 +512,10 @@ class Language:
                         SignaturesDialog.hide()
                         msg_status(f'{LOG_NAME}: {self.lang_str}: Signature help - no info')
 
+        elif msgtype == events.SemanticTokens:
+            reqpos = self.request_positions.pop(msg.message_id)
+            self.on_semantic_tokens(reqpos.h_ed, resultId=msg.resultId, data=msg.data)
+
         #GOTOs
         elif msgtype in GOTO_EVENT_TYPES:
             skip_dlg = msgtype == events.Definition
@@ -772,7 +779,7 @@ class Language:
         id, pos = self._action_by_name(METHOD_COMPLETION, eddoc)
         #print('pos',pos)
         if id is not None:
-            self._save_req_pos(id=id)
+            self._save_req_pos(id=id, eddoc=eddoc)
             return True
 
     def on_snippet(self, ed_self, snippet_id, snippet_text): # completion callback
@@ -781,14 +788,129 @@ class Language:
             if h_ed == ed.get_prop(PROP_HANDLE_SELF):
                 return compl.do_complete(message_id, snippet_text, filtered_items)
         return False
+        
+    def request_semantic_tokens(self, eddoc):
+        opts = None
+        for registration in self.scfg.capabs:
+            if registration.method == METHOD_SEMANTIC_TOKENS:
+                opts = registration.registerOptions
 
+        if not opts:
+            return
+
+        id, pos = self._action_by_name(METHOD_SEMANTIC_TOKENS, eddoc)
+        if id is not None:
+            self._save_req_pos(id=id, eddoc=eddoc)
+    
+    def on_semantic_tokens(self, h_ed, resultId, data):
+        
+        def editor_exists(h_ed):
+            for h in ed_handles():
+                if Editor(h).get_prop(PROP_HANDLE_SELF) == h_ed:
+                    return True
+            return False
+
+        if not editor_exists(h_ed):
+            return            
+        
+        def bits_to_list(number):
+            bits = []
+            for i, c in enumerate(bin(number)[:1:-1]):
+                if c == '1':
+                    bits.append(i)
+            return bits
+        
+        Token = namedtuple('Token', 'line start length tokenType tokenModifiers')
+        token: Token
+        editor = Editor(h_ed)
+        opts = None
+        for registration in self.scfg.capabs:
+            if registration.method == METHOD_SEMANTIC_TOKENS:
+                opts = registration.registerOptions
+
+        assert isinstance(opts, dict)
+        assert 'legend' in opts
+        assert 'tokenTypes' in opts['legend']
+        assert 'tokenModifiers' in opts['legend']
+        tokenTypes = opts['legend']['tokenTypes']
+        tokenModifiers = opts['legend']['tokenModifiers']
+        
+        def item_to_color(l, n):
+            if len(l)>n:
+                s = l[n]
+                return html_color_to_int(s) if s else COLOR_NONE
+            else:
+                return COLOR_NONE
+        
+        lexer_styles = lexer_proc(LEXER_GET_STYLES, editor.get_prop(PROP_LEXER_FILE))
+        if lexer_styles:
+            if 'Id type' in lexer_styles:
+                type_color = lexer_styles['Id type']['color_font']
+            # Lua can have types in func annotations. paint it in the same color as String, for example
+            elif 'String' in lexer_styles:
+                type_color = lexer_styles['String']['color_font']
+            else:
+                type_color = COLOR_NONE
+        #print("lexer_styles", lexer_styles)
+        theme        = app_proc(PROC_THEME_UI_DICT_GET, '')
+        bg_color     = theme['EdTextBg']['color']
+        r,g,b        = bg_color&0xff, (bg_color>>8)&0xff, (bg_color>>16)&0xff
+        light        = max(r,g,b) > 0x80
+        
+        if light:
+            colors = Language.semantic_colors_light.split(',')
+        else:
+            colors = Language.semantic_colors_dark.split(',')
+        
+        editor.attr(MARKERS_DELETE_BY_TAG, tag=TOKENS_TAG)
+        
+        prev_token, prev_line, prev_x1 = None, None, None
+        for i in range(0, len(data), 5):
+            token = Token( *data[i:i+5] )
+            line = token.line
+            x1, x2, y1, y2 = token.start, token.start + token.length, line, line
+            if prev_token:
+                line += prev_line
+                if line == prev_line:
+                    x1 += prev_x1
+                x2, y1, y2 = x1 + token.length, line, line
+            
+            ## print for debugging
+            #for bit in bits_to_list(token.tokenModifiers):
+            #    print(tokenModifiers[bit], '', end='')
+            #print(tokenTypes[token.tokenType], '', end='')
+            #print(editor.get_text_substr(x1, y1, x2, y2))
+            
+            read_only = False
+            for bit in bits_to_list(token.tokenModifiers):
+                if tokenModifiers[bit] == 'readonly':
+                    read_only = True
+                    break
+            
+            t = tokenTypes[token.tokenType]
+            #print("t", t)
+            color_font = COLOR_NONE
+            color_num = {'namespace': 0, 'class': 1, 'method': 2, 'function': 3, 'variable': 4, 'parameter': 5, 'macro': 6, 'property': 7, 'enumMember': 8}
+            try:
+                if t in ('variable', 'parameter') and read_only:
+                    color_font = item_to_color(colors, 9)
+                elif t in ('type'):
+                    color_font = type_color
+                else:
+                    color_font = item_to_color(colors, color_num[t])
+            except:
+                pass
+            if color_font != COLOR_NONE:
+                editor.attr(MARKERS_ADD, x=x1, y=y1, len=token.length, color_font=color_font, tag=TOKENS_TAG)
+            
+            prev_token, prev_line, prev_x1 = token, line, x1
 
     def on_hover(self, eddoc, caret):
         """ just sends request to server, dsiplaying stuff in 'dlg.py/Hint'
         """
         id, pos = self._action_by_name(METHOD_HOVER, eddoc, caret)
         if id is not None:
-            self._save_req_pos(id=id, target_pos_caret=pos)
+            self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=pos)
 
     def do_goto(self, items, dlg_caption, skip_dlg=False, reqpos=None):
         """ items: Location or t.List[t.Union[Location, LocationLink]], None
@@ -869,33 +991,33 @@ class Language:
     def request_sighelp(self, eddoc):
         id, pos = self._action_by_name(METHOD_SIG_HELP, eddoc)
         if id is not None:
-            self._save_req_pos(id=id, target_pos_caret=pos)
+            self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=pos)
 
     # GOTOs
     def request_definition_loc(self, eddoc, caret=None):
         id, pos = self._action_by_name(METHOD_DEFINITION, eddoc, caret=caret)
         if id is not None:
-            self._save_req_pos(id=id, target_pos_caret=pos)
+            self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=pos)
 
     def request_references_loc(self, eddoc, caret=None):
         id, pos = self._action_by_name(METHOD_REFERENCES, eddoc, caret=caret)
         if id is not None:
-            self._save_req_pos(id=id, target_pos_caret=pos)
+            self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=pos)
 
     def request_implementation_loc(self, eddoc, caret=None):
         id, pos = self._action_by_name(METHOD_IMPLEMENTATION, eddoc, caret=caret)
         if id is not None:
-            self._save_req_pos(id=id, target_pos_caret=pos)
+            self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=pos)
 
     def request_declaration_loc(self, eddoc, caret=None):
         id, pos = self._action_by_name(METHOD_DECLARATION, eddoc, caret=caret)
         if id is not None:
-            self._save_req_pos(id=id, target_pos_caret=pos)
+            self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=pos)
 
     def request_typedef_loc(self, eddoc, caret=None):
         id, pos = self._action_by_name(METHOD_TYPEDEF, eddoc, caret=caret)
         if id is not None:
-            self._save_req_pos(id=id, target_pos_caret=pos)
+            self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=pos)
 
 
     def request_format_doc(self, eddoc):
@@ -907,7 +1029,7 @@ class Language:
                 docid = eddoc.get_docid()
                 options = eddoc.get_ed_format_opts()
                 id = self.client.formatting(text_document=docid, options=options)
-                self._save_req_pos(id=id, target_pos_caret=None) # save current editor handle
+                self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=None) # save current editor handle
                 return id
 
     def request_format_sel(self, eddoc):
@@ -921,7 +1043,7 @@ class Language:
                     docid = eddoc.get_docid()
                     options = eddoc.get_ed_format_opts()
                     id = self.client.range_formatting(text_document=docid, range=range_, options=options)
-                    self._save_req_pos(id=id, target_pos_caret=None) # save current editor handle
+                    self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=None) # save current editor handle
 
 
     def update_tree(self, eddoc):
@@ -935,7 +1057,7 @@ class Language:
                 docid = eddoc.get_docid()
                 id = self.client.doc_symbol(docid)
 
-                self._save_req_pos(id=id, target_pos_caret=None) # save current editor handle
+                self._save_req_pos(id=id, eddoc=eddoc, target_pos_caret=None) # save current editor handle
                 self.process_queues()
                 return True
 
@@ -1001,10 +1123,10 @@ class Language:
             if title:
                 msg_status(f'{LOG_NAME}: {self.lang_str} - {title + msg_str}')
 
-    def _save_req_pos(self, id, target_pos_caret=None):
+    def _save_req_pos(self, id, eddoc, target_pos_caret=None):
         """ save request's caret position, and active editor -- to check if proper editor
         """
-        h = ed.get_prop(PROP_HANDLE_SELF)
+        h = eddoc.ed.get_prop(PROP_HANDLE_SELF)
         
         # save word's start position
         x1, y1, _x2, _y2 = ed.get_carets()[0]
@@ -1055,6 +1177,7 @@ def _connect_tcp(port):
     return None
 
 
+TOKENS_TAG = app_proc(PROC_GET_UNIQUE_TAG, '')
 DIAG_BM_TAG = app_proc(PROC_GET_UNIQUE_TAG, '') # jic
 _icons_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
 DIAG_BM_IC_PATHS = {
@@ -1278,6 +1401,7 @@ METHOD_TYPEDEF          = 'textDocument/typeDefinition'
 METHOD_DOC_SYMBOLS      = 'textDocument/documentSymbol'
 METHOD_FORMAT_DOC       = 'textDocument/formatting'
 METHOD_FORMAT_SEL       = 'textDocument/rangeFormatting'
+METHOD_SEMANTIC_TOKENS  = 'textDocument/semanticTokens'
 
 # client method(s)
 METHOD_WS_FOLDERS = 'workspace/workspaceFolders'
@@ -1312,6 +1436,7 @@ METHOD_PROVIDERS = {
     METHOD_DOC_SYMBOLS      : 'documentSymbolProvider',
     METHOD_FORMAT_DOC       : 'documentFormattingProvider',
     METHOD_FORMAT_SEL       : 'documentRangeFormattingProvider',
+    METHOD_SEMANTIC_TOKENS  : 'semanticTokensProvider',
 
     #METHOD_WS_SYMBOLS       : '',
 }
@@ -1394,6 +1519,9 @@ class ServerConfig:
 
             _opts = {**self._default_opts}
             if isinstance(capval, dict):
+                # delete 'documentSelector' if it is empty 
+                if 'documentSelector' in capval and not capval['documentSelector']:
+                     del capval['documentSelector']
                 _opts.update(capval)
             self.capabs.append(Registration(id='0', method=meth, registerOptions=_opts))
 

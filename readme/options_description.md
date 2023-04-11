@@ -73,3 +73,11 @@
 * use_cache - simple caching of autocompletion results. improves speed.
 
 * servers_shutdown_max_time - maximum amount of seconds to wait for LSP servers to shut down. default is 2 seconds. user can set this to 0 to improve CudaText's shutdown speed. use at your own risk.
+
+* enable_semantic_tokens - enable language specific symbol colorization (if supported by server). cuda_lsp tries to get additional color information for language specific symbols like classes, functions, variables, parameters, etc..
+
+* semantic_colors_* - colors for semantic tokens separated by comma, in the following order:
+    * "namespace, class, method, function, variable, parameter, macro, property, enumMember, constant".
+    * for example default value for "semantic_colors_light": '#BC7676,#15AD00,#BF00AF,#BF00AF,,,#FF2436,,#d79e3f,#00B3B7'
+    * you can skip colors, so they will not be painted by LSP server.
+    * additionally, color for `types` will be taken from current syntax theme (Id2).
