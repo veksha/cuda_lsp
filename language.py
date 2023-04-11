@@ -803,6 +803,16 @@ class Language:
             self._save_req_pos(id=id, eddoc=eddoc)
     
     def on_semantic_tokens(self, h_ed, resultId, data):
+        
+        def editor_exists(h_ed):
+            for h in ed_handles():
+                if Editor(h).get_prop(PROP_HANDLE_SELF) == h_ed:
+                    return True
+            return False
+
+        if not editor_exists(h_ed):
+            return            
+        
         def bits_to_list(number):
             bits = []
             for i, c in enumerate(bin(number)[:1:-1]):
