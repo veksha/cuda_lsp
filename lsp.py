@@ -43,8 +43,6 @@ fn_config       = os.path.join(dir_settings, 'cuda_lsp.json')
 fn_opt_descr    = os.path.join(_plugin_dir,  'readme', 'options_description.md')
 fn_state        = os.path.join(dir_settings, 'cuda_lsp_state.json')
 
-SEVERS_SHUTDOWN_MAX_TIME = 2 # seconds
-SEVERS_SHUTDOWN_CHECK_PERIOD = 0.1 # seconds
 LINT_STYLE_MAP = {0:1, 1:4, 2: 2, 3:6}
 
 STATE = {} # like log-panel's filter state
@@ -71,6 +69,8 @@ opt_manual_didopen = None # debug help "manual_didopen"
 opt_auto_append_bracket = True
 opt_hard_filter = False
 opt_use_cache = True
+opt_servers_shutdown_max_time = 2 # seconds
+SERVERS_SHUTDOWN_CHECK_PERIOD = 0.1 # seconds
 
 """
 file:///install.inf
@@ -518,13 +518,13 @@ class Command:
 
         _start = time.time()
         while self._langs:
-            time.sleep(SEVERS_SHUTDOWN_CHECK_PERIOD)
+            time.sleep(SERVERS_SHUTDOWN_CHECK_PERIOD)
             for key,lang in list(self._langs.items()):
                 lang.process_queues()
                 if lang.is_client_exited():
                     del self._langs[key]
 
-            if time.time() - _start > SEVERS_SHUTDOWN_MAX_TIME:
+            if time.time() - _start > opt_servers_shutdown_max_time:
                 break
 
         if not IS_WIN:
@@ -733,6 +733,7 @@ class Command:
         global opt_auto_append_bracket
         global opt_hard_filter
         global opt_use_cache
+        global opt_servers_shutdown_max_time
 
         # general cfg
         if os.path.exists(fn_config):
@@ -761,6 +762,7 @@ class Command:
             CompletionMan.hard_filter = opt_hard_filter
             opt_use_cache = j.get('use_cache', opt_use_cache)
             CompletionMan.use_cache = opt_use_cache
+            opt_servers_shutdown_max_time = j.get('servers_shutdown_max_time', opt_servers_shutdown_max_time)
 
             opt_enable_code_tree = j.get('enable_code_tree', opt_enable_code_tree)
             opt_tree_types_show = j.get('tree_types_show', opt_tree_types_show)
@@ -846,6 +848,7 @@ class Command:
             'auto_append_bracket':       opt_auto_append_bracket,
             'hard_filter':               opt_hard_filter,
             'use_cache':                 opt_use_cache,
+            'servers_shutdown_max_time': opt_servers_shutdown_max_time,
         }
         if opt_manual_didopen is not None:
             j['manual_didopen'] = opt_manual_didopen
