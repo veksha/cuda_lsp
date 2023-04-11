@@ -108,17 +108,21 @@ Plugin has the config file, which can be opened in CudaText by:
 The possible options are listed in another text file in the LSP Client folder.
 
 
-Semantic Tokens
---------------
-Semantic Tokens according to LSP specification is providing information
-about ID's type(class/var/param/macro/etc..) and modifiers(global/static/readonly/etc..)
-for example, you want all classes to be painted green, or all readonly vars be painted in teal color, etc.
+Semantic tokens
+---------------
+Semantic Tokens according to LSP specification is providing information about ID's kind
+(class/var/param/macro/etc) and modifiers (global/static/readonly/etc).
+For example, you want all 'classes' to be painted green, or all 'readonly vars' be painted
+in teal color, etc.
 
-Some servers provide them, some don't. Tested with c++ (clangd), java, lua, js, typescript, markdown, rust.
-example .cpp file is located in "readme" folder (cuda_lsp\readme\test_semantic_tokens.cpp)
+Some servers provide the support for this feature, some don't. Tested with C++ (clangd), Java,
+Lua, JS, TypeScript, Markdown, Rust.
+Example .cpp file is located in the "readme" folder (cuda_lsp\readme\test_semantic_tokens.cpp).
 
-To enable and configure them call "LSP Client / Config" command and see the following options:
-  * "enable_semantic_tokens", "semantic_colors_light", "semantic_colors_dark"
+To enable and configure this, call "LSP Client / Config" command and see the following options:
+- "enable_semantic_tokens"
+- "semantic_colors_light"
+- "semantic_colors_dark"
 
 
 About
