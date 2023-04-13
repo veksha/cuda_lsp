@@ -52,22 +52,26 @@ This mapping is needed also when you have some renamed/changed lexer, e.g. "MyPy
 Some list of LSP language names can be seen here:
 https://microsoft.github.io/language-server-protocol/specifications/specification-current/#-textdocumentitem-
 
-Option to fill "Code tree" from the LSP server:
+Allows to fill code-tree from LSP server:
   "enable_code_tree": true
 
-Which document symbols to show in the tree can also be configured with a comma-separated list of symbol kinds:
+Which document symbols to show in the code-tree, can be configured with a comma-separated
+list of symbol kinds:
   "tree_types_show": "file,module,namespace,package,class,method,property,field,constructor,enum,interface,function,variable,constant,string,number,boolean,array,object,key,null,enummember,struct,event,operator,typeparameter" 
 Default value is: "namespace,class,method,constructor,interface,function,struct"
 
-Format document on every save (off by default). Server needs to support document formatting.
+Reformat the document on every file-saving (off by default). Server needs to support document
+formatting.
   "format_on_save": true
 
 Log 'stderr' of server's process to log-panel (off by default):
   "log_stderr": true
 
-Disable autocompletion in comment and/or string context for this server. overrides same global option. ('cs' by default):
+How to disable auto-completion in "comments" and "strings". Overrides the same global option.
+If "c" in value - disable in "comments"; if "s" in value - disable in "strings".
+User must remove "s" from value for LSP servers that can auto-complete inside quotes
+('class' attribute in HTML, etc).
   "disabled_contexts": "cs"
-User must set it to empty value ("") for LSP servers that can autocomplete inside quotes (class attribute in HTML, etc).
   
 
 Server-specific options
@@ -109,7 +113,7 @@ Plugin options
 --------------
 Plugin has the config file, which can be opened in CudaText by:
 "Options / Settings-plugins / LSP Client / Config".
-The possible options are listed in another text file in the LSP Client folder.
+Possible options are listed in another text file in the LSP Client's "readme" sub-folder.
 
 
 Semantic tokens

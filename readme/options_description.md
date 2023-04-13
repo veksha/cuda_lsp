@@ -82,4 +82,4 @@
     * you can skip colors, so they will not be painted by LSP server.
     * additionally, color for `types` will be taken from current syntax theme (Id2).
 
-* disabled_contexts - Disable autocompletion in comment and/or string context for all servers. Can be overriden in server config.
+* disabled_contexts - how to disable auto-completion in "comments" and "strings" for all servers. If "c" in value - disable in "comments", if "s" in value - disable in "strings". Can be overriden in server config.
