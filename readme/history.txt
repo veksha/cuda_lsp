@@ -1,3 +1,6 @@
+2023.04.13 (by @veksha)
++ add: option (global and per-server) "disabled_contexts"
+
 2023.04.11 (by @veksha)
 + add: support LSP Semantic Tokens, see the new readme.txt part about this feature
 + add: new option "servers_shutdown_max_time"
