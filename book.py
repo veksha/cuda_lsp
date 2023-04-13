@@ -175,8 +175,8 @@ class EditorDoc:
     def get_docpos(self, caret=None):
         if caret is None: # caret pos
             x1, y1, _x2, _y2 = self.ed.get_carets()[0]
-            # is in comment or string
-            if self.ed.get_token(TOKEN_GET_KIND, x1, y1) in ('s','c'):      return
+            if self._lang.is_in_comment_or_string(self.ed, x1, y1):
+                return
         else:  # mouse pos
             x1, y1 = caret
             # is after text

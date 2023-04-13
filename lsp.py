@@ -76,6 +76,8 @@ opt_enable_semantic_tokens = False
 opt_semantic_colors_light = '#BC7676,#15AD00,#BF00AF,#BF00AF,,,#FF2436,,#d79e3f,#00B3B7'
 opt_semantic_colors_dark = '#E38F8F,#0f0,#EB67E0,#EB67E0,,,#FF2436,,#ffe226,#0ff'
 
+opt_disabled_contexts = 'cs'
+
 """
 file:///install.inf
 file:///book.py
@@ -754,6 +756,7 @@ class Command:
         global opt_enable_semantic_tokens
         global opt_semantic_colors_light
         global opt_semantic_colors_dark
+        global opt_disabled_contexts
 
         # general cfg
         if os.path.exists(fn_config):
@@ -789,6 +792,8 @@ class Command:
             Language.semantic_colors_light = opt_semantic_colors_light
             opt_semantic_colors_dark = j.get('semantic_colors_dark', opt_semantic_colors_dark)
             Language.semantic_colors_dark = opt_semantic_colors_dark
+            opt_disabled_contexts = j.get('disabled_contexts', opt_disabled_contexts)
+            Language.disabled_contexts = opt_disabled_contexts
             
             opt_enable_code_tree = j.get('enable_code_tree', opt_enable_code_tree)
             opt_tree_types_show = j.get('tree_types_show', opt_tree_types_show)
@@ -877,7 +882,8 @@ class Command:
             'servers_shutdown_max_time': opt_servers_shutdown_max_time,
             'enable_semantic_tokens':    opt_enable_semantic_tokens,
             'semantic_colors_light':     opt_semantic_colors_light,
-            'semantic_colors_dark':      opt_semantic_colors_dark
+            'semantic_colors_dark':      opt_semantic_colors_dark,
+            'disabled_contexts':         opt_disabled_contexts,
         }
         if opt_manual_didopen is not None:
             j['manual_didopen'] = opt_manual_didopen

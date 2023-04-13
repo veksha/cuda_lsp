@@ -81,3 +81,5 @@
     * for example default value for "semantic_colors_light": '#BC7676,#15AD00,#BF00AF,#BF00AF,,,#FF2436,,#d79e3f,#00B3B7'
     * you can skip colors, so they will not be painted by LSP server.
     * additionally, color for `types` will be taken from current syntax theme (Id2).
+
+* disabled_contexts - Disable autocompletion in comment and/or string context for all servers. Can be overriden in server config.

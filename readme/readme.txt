@@ -64,6 +64,10 @@ Format document on every save (off by default). Server needs to support document
 
 Log 'stderr' of server's process to log-panel (off by default):
   "log_stderr": true
+
+Disable autocompletion in comment and/or string context for this server. overrides same global option. ('cs' by default):
+  "disabled_contexts": "cs"
+User must set it to empty value ("") for LSP servers that can autocomplete inside quotes (class attribute in HTML, etc).
   
 
 Server-specific options
