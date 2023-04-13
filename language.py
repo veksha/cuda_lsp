@@ -122,6 +122,7 @@ GOTO_TITLES = {
 class Language:
     semantic_colors_light = None
     semantic_colors_dark = None
+    disabled_contexts = None
     
     def __init__(self, cfg, cmds=None, lintstr='', underline_style=None, state=None):
         self._shutting_down = None  # scheduled shutdown when not yet initialized
@@ -142,6 +143,7 @@ class Language:
         self._env_paths = cfg.get('env_paths')
         self._log_stderr = bool(cfg.get('log_stderr'))
         self._format_on_save = bool(cfg.get('format_on_save'))
+        self._disabled_contexts_for_server = cfg.get('disabled_contexts')
 
         self._validate_config()
 
@@ -728,6 +730,13 @@ class Language:
             return id, (docpos.position.character, docpos.position.line)
         return None,None #TODO fix ugly
 
+    def is_in_comment_or_string(self, _ed, x, y):
+        context = _ed.get_token(TOKEN_GET_KIND, x, y)
+        
+        if self._disabled_contexts_for_server is not None:
+            return context in self._disabled_contexts_for_server
+        else:
+            return context in Language.disabled_contexts
 
     def on_complete(self, eddoc):
         # if text selection present and ctrl+space is pressed: start debug tests
@@ -741,6 +750,9 @@ class Language:
                 _, message_id, items, filtered_items, carets, _, line_prev, is_incomplete = self._last_complete
                 x1,y1, _,_ = ed.get_carets()[0]
                 x2,y2, _,_ = carets[0]
+                
+                if self.is_in_comment_or_string(ed, x1, y1):
+                    return False
                 
                 # check if left side of line was not changed
                 line_current = ed.get_text_line(y2, max_len=1000)
