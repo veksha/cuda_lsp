@@ -252,6 +252,7 @@ class Client:
 
         self._send_buf += _make_request(method=method, params=params, id=id)
         self._unanswered_requests[id] = Request(id=id, method=method, params=params)
+        
         return id
 
     def _send_notification(
@@ -300,7 +301,9 @@ class Client:
             completion_list = None
 
             try:
-                completion_list = CompletionList.parse_obj(response.result)
+                import time
+                #completion_list = CompletionList.parse_obj(response.result)
+                completion_list = response.result # because parse_obj is expensive and not really needed.
             except ValidationError:
                 try:
                     completion_list = CompletionList(
@@ -727,3 +730,4 @@ class Client:
             method="textDocument/rangeFormatting",
             params=params,
         )
+

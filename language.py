@@ -75,6 +75,7 @@ import datetime
 LOG = False
 LOG_CACHE = False
 DEBUG_COMPLETION = False
+DEBUG_MESSAGES = False
 DBG = LOG
 LOG_NAME = 'LSP'
 
@@ -400,7 +401,6 @@ class Language:
             errors = []
             while not self._read_q.empty():
                 data = self._read_q.get()
-                self._dbg_bmsgs = (self._dbg_bmsgs + [data])[-128:] # dbg
 
                 events = self.client.recv(data, errors=errors)
 
@@ -416,7 +416,8 @@ class Language:
                         'dict':lambda _: response_error_dict,
                         '__str__':lambda _: str(response_error_dict),
                     })
-                    self._dbg_msgs = (self._dbg_msgs + [UnsupportedMessage()])[-512:]
+                    if DEBUG_MESSAGES:
+                        self._dbg_msgs = (self._dbg_msgs + [UnsupportedMessage()])[-128:]
 
                 errors.clear()
 
@@ -442,7 +443,8 @@ class Language:
 
 
     def _on_lsp_msg(self, msg):
-        self._dbg_msgs = (self._dbg_msgs + [msg])[-512:]
+        if DEBUG_MESSAGES:
+            self._dbg_msgs = (self._dbg_msgs + [msg])[-128:]
 
         msgtype = type(msg)
 
@@ -461,7 +463,7 @@ class Language:
 
         elif msgtype == events.Completion:
             if msg.completion_list:
-                items = msg.completion_list.items
+                items = msg.completion_list['items']
                 pass;       LOG and print(f'got completion({len(items)}): {time.time():.3f} {msg.message_id} in {list(self.request_positions)}')
                 reqpos = self.request_positions.pop(msg.message_id, None)
                 #print('msg.completion_list.isIncomplete:',msg.completion_list.isIncomplete)
@@ -471,8 +473,8 @@ class Language:
                 if reqpos:
                     try:
                         compl = CompletionMan(carets=reqpos.carets, h_ed=reqpos.h_ed)
-                        pass;       LOG_CACHE and print("using fresh results.","items:",len(items)," incomplete:",msg.completion_list.isIncomplete)
-                        self._last_complete = compl.prepare_complete(msg.message_id, items, msg.completion_list.isIncomplete)
+                        pass;       LOG_CACHE and print("using fresh results.","items:",len(items)," incomplete:",msg.completion_list['isIncomplete'])
+                        self._last_complete = compl.prepare_complete(msg.message_id, items, msg.completion_list['isIncomplete'])
                         compl.show_complete(self._last_complete.message_id, self._last_complete.filtered_items)
                     except AssertionError as e:
                         print("NOTE:",e)
@@ -766,7 +768,7 @@ class Language:
                         word1part = word2part = ''
                     word_len = len(word1part) + len(word2part)
                     
-                    filtered_items = list(filter(lambda i: word1part.lower() in i.label.lower(), filtered_items))
+                    filtered_items = list(filter(lambda i: word1part.lower() in i['label'].lower(), filtered_items))
                     
                     if filtered_items: # if cache still has something to offer
                         text_between_last_pos = ed.get_text_substr(x1,y1,x2,y2).strip()
@@ -1759,7 +1761,7 @@ class CompletionMan:
             return False
         
     def filter(self, item, word):
-        s1 = item.filterText if item.filterText else item.label
+        s1 = item.get('filterText', item['label'])
         s2 = word
         pos_bracket = s1.find('(')
         s1 = s1 if pos_bracket == -1 else s1[:pos_bracket]
@@ -1769,7 +1771,7 @@ class CompletionMan:
             return s2.lower() in s1.lower()
     
     def sort(self, item, word):
-        s1 = item.filterText if item.filterText else item.label.strip()
+        s1 = item.get('filterText', item['label'].strip())
         s2 = word
         pos_bracket = s1.find('(')
         s1 = s1 if pos_bracket == -1 else s1[:pos_bracket]
@@ -1795,9 +1797,9 @@ class CompletionMan:
         word1 = word2 = ''
         if any(self.word):
             word1, word2 = self.word
-            #filtered_items = items
+
             filtered_items = list(filter(lambda i: self.filter(i, word1), items))
-            #filtered_items = sorted(items, key=lambda i: i.sortText or i.label)
+
             filtered_items = sorted(filtered_items, key=lambda i: self.sort(i, word1))
             if len(word1) == 0 and len(word2) > 0: # we are at the start of the word
                 # update cached caret (so it points to the start of the word)
@@ -1849,11 +1851,12 @@ class CompletionMan:
             return s
         
         words = ['{}\t{}\t{}|{}'.format(
-                    add_html_tags(item.label, item.kind, word1),
-                    short_version(item.kind and item.kind.name.lower() or ''), message_id, i
-                    )
-                    for i,item in enumerate(items)]
-        sel = get_first(i for i,item in enumerate(items)  if item.preselect is True)
+                    add_html_tags(item['label'], item['kind'], word1),
+                    short_version(item['kind'] and CompletionItemKind(item['kind']).name.lower() or ''),
+                    message_id, i)
+                    for i,item in enumerate(items)
+                ]
+        sel = get_first(i for i,item in enumerate(items)  if item.get('preselect') is True)
         sel = sel or 0
         
         ed.complete_alt('\n'.join(words), SNIP_ID, len_chars=0, selected=sel)
@@ -1883,16 +1886,16 @@ class CompletionMan:
             x2 = x0+len(word2)
         
         line_txt = ed.get_text_line(y0)
-        is_callable = item.kind  and  item.kind in CALLABLE_COMPLETIONS
-        is_snippet = item.insertTextFormat is not None and item.insertTextFormat == InsertTextFormat.SNIPPET
+        is_callable = item.get('kind') in CALLABLE_COMPLETIONS
+        is_snippet = item.get('insertTextFormat') == InsertTextFormat.SNIPPET
 
         cached_x = self.carets[0][0]
         cached_x_diff = x0-cached_x
-        if item.textEdit:
-            x1,y1,x2,y2 = EditorDoc.range2carets(item.textEdit.range)
-            text = item.textEdit.newText
-        elif item.insertText:   text = item.insertText
-        else:                   text = item.label
+        if 'textEdit' in item:
+            x1,y1,x2,y2 = EditorDoc.range2carets(item.get('textEdit')['range'])
+            text = item.get('textEdit')['newText']
+        elif 'insertText' in item: text = item.get('insertText')
+        else:                      text = item.get('label')
         
         # useful logging (when DEBUG_COMPLETION is enabled)
         if DEBUG_COMPLETION:
@@ -1912,8 +1915,8 @@ class CompletionMan:
         CompletionMan.apply_completion_edit(edit)
         
         # additinal edits
-        if item.additionalTextEdits:
-            for edit in item.additionalTextEdits:
+        if 'additionalTextEdits' in item:
+            for edit in item.get('additionalTextEdits'):
                 EditorDoc.apply_edit(ed, edit)
         return True
 

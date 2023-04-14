@@ -124,7 +124,8 @@ class WorkDoneProgressEnd(WorkDoneProgress):
 # XXX: should these two be just Events or?
 class Completion(Event):
     message_id: Id
-    completion_list: t.Optional[CompletionList]
+    #completion_list: t.Optional[CompletionList]
+    completion_list: t.Optional[t.Dict[str, t.Any]] # make it raw dict (optimization)
 
 
 # XXX: not sure how to name this event.
