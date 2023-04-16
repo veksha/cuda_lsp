@@ -698,7 +698,7 @@ class Command:
     # for project folder change
     def shutdown_server(self, name=None):
         # choice dlg
-        if name == None:
+        if name is None:
             names = list(self._langs)
             names.sort()
             ind = dlg_menu(DMENU_LIST, names, caption=_('Shutdown server'))
