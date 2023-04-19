@@ -300,18 +300,25 @@ class Client:
         elif request.method == "textDocument/completion":
             completion_list = None
 
-            try:
-                import time
-                #completion_list = CompletionList.parse_obj(response.result)
-                completion_list = response.result # because parse_obj is expensive and not really needed.
-            except ValidationError:
-                try:
-                    completion_list = CompletionList(
-                        isIncomplete=False,
-                        items=parse_obj_as(t.List[CompletionItem], response.result),
-                    )
-                except ValidationError:
-                    assert response.result is None
+            if isinstance(response.result, dict):
+                completion_list = response.result
+            elif isinstance(response.result, list):
+                completion_list = {
+                    'isIncomplete': 'false',
+                    'items': response.result,
+                }
+            
+            ## ! parse_obj is expensive and not really needed.
+            #try:
+            #    completion_list = CompletionList.parse_obj(response.result)
+            #except ValidationError:
+            #    try:
+            #        completion_list = CompletionList(
+            #            isIncomplete=False,
+            #            items=parse_obj_as(t.List[CompletionItem], response.result),
+            #        )
+            #    except ValidationError:
+            #        assert response.result is None
 
             event = Completion(message_id=response.id, completion_list=completion_list)
 
