@@ -1807,15 +1807,19 @@ class CompletionMan:
                     cft_items = res[0] # 0 = list of items
                     for item in cft_items:
                         parts = item.split('|')
-                        if len(parts) == 3:
-                            _, label, tab_name = parts
+                        if len(parts) in [2,3]:
+                            if len(parts) == 3:
+                                _, label, tab_name = parts
+                                label = '{}  ({})'.format(label, tab_name)
+                            elif len(parts) == 2:
+                                _, label = parts
                             filtered_items.append({
-                                'label': '{}  ({})'.format(label, tab_name),
+                                'label': label,
                                 'kind' : CompletionItemKind.TEXT,
                                 'insertText': label,
                             })
                         else:
-                            pass;       LOG and print(f'NOTE: {LOG_NAME}: odd item: {item}')
+                            print(f'NOTE: {LOG_NAME}: odd item: {item}')
             except ImportError:
                 pass
         
