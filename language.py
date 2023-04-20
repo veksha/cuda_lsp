@@ -1691,7 +1691,6 @@ class CompletionMan:
             else:                           pos += 1
         x1 = min(edit.replace_range[0], edit.cached_x)
         x2 = max(edit.replace_range[2], edit.cached_x+pos)
-        ed.delete(x1, edit.y, x2, edit.y)
         
         has_brackets = all(b in text for b in '()')
         if is_bracket_follows or has_brackets: # remove "(params)" if bracket follows
@@ -1715,9 +1714,9 @@ class CompletionMan:
         # insert completion
         if edit.is_snippet:
             snippet = Snippet(text=text.split('\n'), t=VS_SNIPPET)
-            snippet.insert(ed) # snippet.py automatically
+            snippet.insert(ed, replace_from=x1, replace_to=x2)
         else:
-            new_caret = ed.insert(*ed.get_carets()[0][:2], text)
+            new_caret = ed.replace(x1, edit.y, x2, edit.y, text)
             ed.set_caret(*new_caret)
         
         # move caret inside "()" if snippet is very simple, e.g. "func()"
@@ -1727,6 +1726,7 @@ class CompletionMan:
         
     def do_test(test: Test):
         """Test which prevents regressions of autocomplete feature
+           NOTE: tests do not cover resulting caret pos.
         """
         ed.set_text_all(test.initial_text)
         cr_x, cr_y, _, _ = ed.get_carets()[0]

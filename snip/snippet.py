@@ -155,7 +155,7 @@ class Snippet:
     def __lt__(self, o):
         return self.name < o.name
 
-    def insert(self, ed: ct.Editor):
+    def insert(self, ed: ct.Editor, replace_from=None, replace_to=None):
         if not self.text:
             return
         sn = self.text.copy()
@@ -207,8 +207,13 @@ class Snippet:
             print(_('Wrong snippet: {}').format(self.name))
             return
 
-        # insert text
-        ed.insert(x0, y0, '\n'.join(s_text))
+        # insert (or replace) text
+        replacing = replace_from is not None and replace_to is not None
+        if replacing:
+            ed.replace(replace_from, y0, replace_to, y0, '\n'.join(s_text))
+            x0 = replace_from # update x coord! otherwise caret/markers will be in the wrong place
+        else:
+            ed.insert(x0, y0, '\n'.join(s_text))
 
         # delete old markers
         mark_placed = False
