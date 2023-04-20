@@ -1810,13 +1810,15 @@ class CompletionMan:
                         if len(parts) in [2,3]:
                             if len(parts) == 3:
                                 _, label, tab_name = parts
+                                insertText = label
                                 label = '{}  ({})'.format(label, tab_name)
                             elif len(parts) == 2:
                                 _, label = parts
+                                insertText = label
                             filtered_items.append({
                                 'label': label,
                                 'kind' : CompletionItemKind.TEXT,
-                                'insertText': label,
+                                'insertText': insertText,
                             })
                         else:
                             print(f'NOTE: {LOG_NAME}: odd item: {item}')
