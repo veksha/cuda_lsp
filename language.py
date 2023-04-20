@@ -124,6 +124,7 @@ class Language:
     semantic_colors_light = None
     semantic_colors_dark = None
     disabled_contexts = None
+    complete_from_text = None
     
     def __init__(self, cfg, cmds=None, lintstr='', underline_style=None, state=None):
         self._shutting_down = None  # scheduled shutdown when not yet initialized
@@ -1795,18 +1796,38 @@ class CompletionMan:
         _carets = ed.get_carets()
         x0,y0, _x1,_y1 = _carets[0]
         
-        word1 = word2 = ''
+        filtered_items = items.copy()
+        
+        # Complete From Text integration
+        if Language.complete_from_text:
+            try:
+                import cuda_complete_from_text as cft
+                res = cft.get_completions(ed, x0, y0, with_acp=False, ignore_lexer=True)
+                if res:
+                    cft_items = res[0] # 0 = list of items
+                    for item in cft_items:
+                        parts = item.split('|')
+                        if len(parts) == 3:
+                            _, label, tab_name = parts
+                            filtered_items.append({
+                                'label': '{}  ({})'.format(label, tab_name),
+                                'kind' : CompletionItemKind.TEXT,
+                                'insertText': label,
+                            })
+                        else:
+                            pass;       LOG and print(f'NOTE: {LOG_NAME}: odd item: {item}')
+            except ImportError:
+                pass
+        
+        word1, word2 = self.word
         if any(self.word):
-            word1, word2 = self.word
-
-            filtered_items = list(filter(lambda i: self.filter(i, word1), items))
-
+            filtered_items = list(filter(lambda i: self.filter(i, word1), filtered_items))
             filtered_items = sorted(filtered_items, key=lambda i: self.sort(i, word1))
             if len(word1) == 0 and len(word2) > 0: # we are at the start of the word
                 # update cached caret (so it points to the start of the word)
                 self.carets = [(x0,y0,_x1,_y1)]
         else:
-            filtered_items = sorted(items, key=lambda i: self.sort(i, ''))
+            filtered_items = sorted(filtered_items, key=lambda i: self.sort(i, ''))
 
         return CachedCompletion(self, message_id, items, filtered_items, self.carets, self.h_ed, self.line_str, is_incomplete)
     

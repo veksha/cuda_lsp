@@ -77,6 +77,7 @@ opt_semantic_colors_light = '#BC7676,#15AD00,#BF00AF,#BF00AF,,,#FF2436,,#d79e3f,
 opt_semantic_colors_dark = '#E38F8F,#0f0,#EB67E0,#EB67E0,,,#FF2436,,#ffe226,#0ff'
 
 opt_disabled_contexts = 'cs'
+opt_complete_from_text = False
 
 """
 file:///install.inf
@@ -757,6 +758,7 @@ class Command:
         global opt_semantic_colors_light
         global opt_semantic_colors_dark
         global opt_disabled_contexts
+        global opt_complete_from_text
 
         # general cfg
         if os.path.exists(fn_config):
@@ -794,6 +796,8 @@ class Command:
             Language.semantic_colors_dark = opt_semantic_colors_dark
             opt_disabled_contexts = j.get('disabled_contexts', opt_disabled_contexts)
             Language.disabled_contexts = opt_disabled_contexts
+            opt_complete_from_text = j.get('complete_from_text', opt_complete_from_text)
+            Language.complete_from_text = opt_complete_from_text
             
             opt_enable_code_tree = j.get('enable_code_tree', opt_enable_code_tree)
             opt_tree_types_show = j.get('tree_types_show', opt_tree_types_show)
@@ -884,6 +888,7 @@ class Command:
             'semantic_colors_light':     opt_semantic_colors_light,
             'semantic_colors_dark':      opt_semantic_colors_dark,
             'disabled_contexts':         opt_disabled_contexts,
+            'complete_from_text':        opt_complete_from_text,
         }
         if opt_manual_didopen is not None:
             j['manual_didopen'] = opt_manual_didopen
