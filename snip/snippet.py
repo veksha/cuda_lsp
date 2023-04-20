@@ -164,6 +164,10 @@ class Snippet:
         if len(carets) != 1:
             return
         x0, y0, x1, y1 = carets[0]
+        
+        replacing = replace_from is not None and replace_to is not None
+        if replacing:
+            x0 = replace_from # update x coord! otherwise caret/markers will be in the wrong place
 
         tab_spaces = ed.get_prop(ct.PROP_TAB_SPACES)
         tab_size = ed.get_prop(ct.PROP_TAB_SIZE)
@@ -199,10 +203,6 @@ class Snippet:
             ed.delete(x0, y0, x1, y1)
             ed.set_caret(x0, y0)
 
-        replacing = replace_from is not None and replace_to is not None
-        if replacing:
-            x0 = replace_from # update x coord! otherwise caret/markers will be in the wrong place
-        
         # parse Tabstops and Placeholders
         _mrks = ed.markers(ct.MARKERS_GET) or {}
         basetag = max([i[-1] for i in _mrks]) if _mrks else 0
