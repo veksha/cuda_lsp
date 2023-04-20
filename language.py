@@ -411,13 +411,14 @@ class Language:
                         err_str = err_str[:limit] + '...'
                     msg_status(f'{LOG_NAME}: {self.lang_str}: unsupported msg: {err_str}')
                     pass;       LOG and self.plog.log_str(f'{err}', type_='dbg', severity=SEVERITY_ERR)
-                    response_error_dict = err.args[0].dict()
-                    UnsupportedMessage = type('Unsupported Message!', (object,), {
-                        'dict':lambda _: response_error_dict,
-                        '__str__':lambda _: str(response_error_dict),
-                    })
                     if DEBUG_MESSAGES:
-                        self._dbg_msgs = (self._dbg_msgs + [UnsupportedMessage()])[-128:]
+                        if err and hasattr(err, 'args') and err.args and hasattr(err.args[0], 'dict'):
+                            response_error_dict = err.args[0].dict()
+                            UnsupportedMessage = type('Unsupported Message!', (object,), {
+                                'dict':lambda _: response_error_dict,
+                                '__str__':lambda _: str(response_error_dict),
+                            })
+                            self._dbg_msgs = (self._dbg_msgs + [UnsupportedMessage()])[-128:]
 
                 errors.clear()
 
