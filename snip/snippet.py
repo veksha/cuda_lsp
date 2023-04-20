@@ -199,6 +199,10 @@ class Snippet:
             ed.delete(x0, y0, x1, y1)
             ed.set_caret(x0, y0)
 
+        replacing = replace_from is not None and replace_to is not None
+        if replacing:
+            x0 = replace_from # update x coord! otherwise caret/markers will be in the wrong place
+        
         # parse Tabstops and Placeholders
         _mrks = ed.markers(ct.MARKERS_GET) or {}
         basetag = max([i[-1] for i in _mrks]) if _mrks else 0
@@ -208,10 +212,8 @@ class Snippet:
             return
 
         # insert (or replace) text
-        replacing = replace_from is not None and replace_to is not None
         if replacing:
             ed.replace(replace_from, y0, replace_to, y0, '\n'.join(s_text))
-            x0 = replace_from # update x coord! otherwise caret/markers will be in the wrong place
         else:
             ed.insert(x0, y0, '\n'.join(s_text))
 
