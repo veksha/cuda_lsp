@@ -1,5 +1,4 @@
-2023.04.20 (by @veksha)
-+ add: support for 2+ LSP servers for the same language, results will be merged
+2023.04.21 (by @veksha)
 + add: new option "complete_from_text" allows to append results of 'Complete From Text' plugin to LSP results (you must update that plugin too)
 
 2023.04.13 (by @veksha)
