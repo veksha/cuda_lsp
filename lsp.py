@@ -681,8 +681,7 @@ class Command:
 
         if ind is not None:
             max_output_width = max(80, ed.get_prop(PROP_SCROLL_HORZ_INFO)['page'])
-            if ed.get_filename():
-                file_open('')
+            file_open('')
             import pprint
             try:
                 ed.set_text_all(pprint.pformat(lang._dbg_msgs[ind].dict(), width=max_output_width))
