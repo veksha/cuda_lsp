@@ -471,17 +471,16 @@ class Language:
                 #print('msg.completion_list.isIncomplete:',msg.completion_list.isIncomplete)
             else:
                 items = None
-            if items:
-                if reqpos:
-                    try:
-                        compl = CompletionMan(carets=reqpos.carets, h_ed=reqpos.h_ed)
-                        pass;       LOG_CACHE and print("using fresh results.","items:",len(items)," incomplete:",msg.completion_list['isIncomplete'])
-                        self._last_complete = compl.prepare_complete(msg.message_id, items, msg.completion_list['isIncomplete'])
-                        compl.show_complete(self._last_complete.message_id, self._last_complete.filtered_items)
-                    except AssertionError as e:
-                        print("NOTE:",e)
-            else:
-                msg_status(f'{LOG_NAME}: {self.lang_str}: Completion - no info')
+            if items is None:
+                items = [] 
+            if reqpos:
+                try:
+                    compl = CompletionMan(self, carets=reqpos.carets, h_ed=reqpos.h_ed)
+                    pass;       LOG_CACHE and print("using fresh results.","items:",len(items)," incomplete:",msg.completion_list['isIncomplete'])
+                    self._last_complete = compl.prepare_complete(msg.message_id, items, msg.completion_list['isIncomplete'])
+                    compl.show_complete(self._last_complete.message_id, self._last_complete.filtered_items)
+                except AssertionError as e:
+                    print("NOTE:",e)
 
         elif msgtype == events.Hover:
             if msg.message_id in self.request_positions:
@@ -788,7 +787,7 @@ class Language:
                             return True
         
         if CompletionMan.use_cache and can_use_cached():
-            compl = CompletionMan(self._last_complete.carets)
+            compl = CompletionMan(self, carets=self._last_complete.carets)
             self._last_complete = compl.prepare_complete(
                 self._last_complete.message_id,
                 self._last_complete.items,
@@ -1655,10 +1654,11 @@ class CompletionMan:
     hard_filter = False
     use_cache = True
     
-    def __init__(self, carets=None, h_ed=None):
+    def __init__(self, lang, carets=None, h_ed=None):
         assert len(carets) == 1, 'no autocomplete for multi-carets'
         assert carets[0][3] == -1, 'no autocomplete for selection'
 
+        self.lang = lang
         self.carets = carets
         self.h_ed = h_ed or ed.get_prop(PROP_HANDLE_SELF)
         
@@ -1838,6 +1838,11 @@ class CompletionMan:
         return CachedCompletion(self, message_id, items, filtered_items, self.carets, self.h_ed, self.line_str, is_incomplete)
     
     def show_complete(self, message_id, items):
+        
+        if not items:
+            msg_status(f'{LOG_NAME}: {self.lang.lang_str}: Completion - no info')
+            return
+        
         word1 = ''
         if any(self.word):
             word1, _ = self.word
