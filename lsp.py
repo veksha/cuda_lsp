@@ -372,13 +372,8 @@ class Command:
         else:    # create doc if new lexer is supported by lsp server
             self.on_open(ed_self)
 
-    def on_change(self, ed_self):
-        if opt_enable_semantic_tokens:
-            doc = self.book.get_doc(ed_self)
-            if doc and doc.lang:
-                doc.lang.request_semantic_tokens(doc)
-        
     def on_change_slow(self, ed_self):
+        
         doc = self.book.get_doc(ed_self)
         if doc and doc.lang:
             # tree update sends changes by itself
@@ -386,6 +381,11 @@ class Command:
                 return
             if not opt_send_change_on_request:
                 doc.lang.send_changes(doc)
+        
+        if opt_enable_semantic_tokens:
+            doc = self.book.get_doc(ed_self)
+            if doc and doc.lang:
+                doc.lang.request_semantic_tokens(doc)
 
 
     @command
