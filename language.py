@@ -824,7 +824,7 @@ class Language:
         if not opts:
             return
 
-        id = self.client.semanticTokens(eddoc.get_docid())
+        id = self.client.semantic_tokens(eddoc.get_docid())
         if id is not None:
             self._save_req_pos(id=id, eddoc=eddoc)
     

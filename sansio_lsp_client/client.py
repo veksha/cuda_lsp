@@ -578,7 +578,7 @@ class Client:
 
 # NEW #####################
 
-    def semanticTokens(
+    def semantic_tokens(
             self,
             text_document: TextDocumentIdentifier,
             # WorkDoneProgressParams
