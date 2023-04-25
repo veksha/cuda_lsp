@@ -1699,9 +1699,11 @@ class CompletionMan:
         x2 = max(edit.replace_range[2], edit.cached_x+pos)
         
         has_brackets = all(b in text for b in '()')
-        if is_bracket_follows or has_brackets: # remove "(params)" if bracket follows
+        if is_bracket_follows and has_brackets: # remove "(params)" if bracket follows
             text = re.sub('\([^)]*\)(;|\$\d)?$', '', text)
             has_brackets = False
+        if edit.is_snippet and text.endswith("($0)"):
+            text = text[:-4]
         lex = ed.get_prop(PROP_LEXER_FILE, '')
         
         last_char_nonword = text[-1] in non_word_chars # TODO: check why this is needed
@@ -1908,6 +1910,10 @@ class CompletionMan:
             return
 
         item_ind = int(item_ind)
+        
+        if item_ind >= len(items): # fixes rare bug
+            return
+        
         item = items[item_ind]
             
         _carets = ed.get_carets()
@@ -2068,10 +2074,10 @@ def debug_completion():
     # in these tests "|" symbol means caret
     # two such symbols means that first one is caret pos from cached data and second one is actual caret pos
     #                    initial_text     range    replace_text     result                                callable  snippet
-    tests.append( Test('#include "|"', (10,0,11,0), 'DbgHelp.h"', '#include "DbgHelp.h"',                    False, False) ) # cpp
-    tests.append( Test('#include "std|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',                 False, False) ) # cpp
-    tests.append( Test('    cout|', (4,0,8,0), 'std::cout', '    std::cout',                                 False, False) ) # cpp
-    tests.append( Test('    std::c|ou', (9,0,10,0), 'cout', '    std::cout',                                 False, False) ) # cpp
+    tests.append( Test('#include "|"', (10,0,11,0), 'DbgHelp.h"', '#include "DbgHelp.h"',                    False, False) ) # cpp (clangd)
+    tests.append( Test('#include "std|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',                 False, False) ) # cpp (clangd)
+    tests.append( Test('    cout|', (4,0,8,0), 'std::cout', '    std::cout',                                 False, False) ) # cpp (clangd)
+    tests.append( Test('    std::c|ou', (9,0,10,0), 'cout', '    std::cout',                                 False, False) ) # cpp (clangd)
     tests.append( Test('    pr|intln("hello, world")', (4,0,11,0), 'print', '    print("hello, world")',     False, False) ) # scala
     tests.append( Test('System.out.|pr|int("The sum is: " + sum);', (11,0,16,0), 'print',
                          'System.out.print("The sum is: " + sum);',                                          True,  True ) ) # java
@@ -2084,16 +2090,17 @@ def debug_completion():
                                                   "import { PredicateResult } from 'web-tree-sitter'",      False,  True) ) # typescript
     tests.append( Test("import { Logger } from '|vs|'", (24,0,26,0), 'vscode-languageserver',
                                                   "import { Logger } from 'vscode-languageserver'",          False, False) ) # typescript
-    tests.append( Test('f|u|', (0,0,1,0), 'func1()', 'func1()',                                              True,  True ) ) # cpp
-    tests.append( Test('#include "Dbg|hel|', (10,0,13,0), 'DbgHelp.h"', '#include "DbgHelp.h"',              False, False) ) # cpp
-    tests.append( Test('#include "std|io|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',              False, False) ) # cpp
+    tests.append( Test('f|u|', (0,0,1,0), 'func1()', 'func1()',                                              True,  True ) ) # cpp (clangd)
+    tests.append( Test('#include "Dbg|hel|', (10,0,13,0), 'DbgHelp.h"', '#include "DbgHelp.h"',              False, False) ) # cpp (clangd)
+    tests.append( Test('#include "std|io|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',              False, False) ) # cpp (clangd)
     tests.append( Test('select|', (0,0,6,0), 'select', 'select()',                                           True,   True) ) # lua
-    tests.append( Test('~p|l|Player()', (1,0,2,0), 'Player', '~Player()',                                    False, False) ) # cpp
-    tests.append( Test('~~P|layer()', (2,0,3,0), '~Player()', '~~Player()',                                 True,   True) ) # cpp
-    tests.append( Test('~P|layer()', (1,0,2,0), '~Player()', '~Player()',                                    True,   True) ) # cpp
-    tests.append( Test('_Analysis_m|ode_(wqe qwe qw)', (0,0,11,0), '_Analysis_mode_(${1:mode})', '_Analysis_mode_(wqe qwe qw)', False, True) ) # cpp
+    tests.append( Test('~p|l|Player()', (1,0,2,0), 'Player', '~Player()',                                    False, False) ) # cpp (clangd)
+    tests.append( Test('~~P|layer()', (2,0,3,0), '~Player()', '~~Player()',                                 True,   True) ) # cpp (clangd)
+    tests.append( Test('~P|layer()', (1,0,2,0), '~Player()', '~Player()',                                    True,   True) ) # cpp (clangd)
+    tests.append( Test('_Analysis_m|ode_(wqe qwe qw)', (0,0,11,0), '_Analysis_mode_(${1:mode})', '_Analysis_mode_(wqe qwe qw)', False, True) ) # cpp (clangd)
     tests.append( Test("ed.set_tex|t_all('')", (3,0,15,0), 'set_text_all(${1:text})$0', "ed.set_text_all('')", True, True) ) # python (jedi-language-server)
     tests.append( Test('events.Publish|Diagnostics', (7,0,25,0), 'PublishDiagnostics($0)', 'events.PublishDiagnostics', False, True) ) # python (jedi-language-server)
+    tests.append( Test('static_assert|', (0,0,13,0), 'static_assert(${1:expression}, ${0:message});', 'static_assert(expression, message);', False, True) ) # cpp (clangd)
     
     
     failed = 0
