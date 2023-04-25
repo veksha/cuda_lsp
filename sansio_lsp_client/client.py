@@ -580,14 +580,13 @@ class Client:
 
     def semanticTokens(
             self,
-            text_document_position: TextDocumentPosition,
-            #previousResultId: str
+            text_document: TextDocumentIdentifier,
             # WorkDoneProgressParams
     ) -> int:
         assert self._state == ClientState.NORMAL
         return self._send_request(
             method="textDocument/semanticTokens/full",
-            params=text_document_position.dict(),
+            params={"textDocument": text_document.dict()},
         )
 
     def hover(
