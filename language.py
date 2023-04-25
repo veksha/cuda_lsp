@@ -1704,6 +1704,7 @@ class CompletionMan:
             has_brackets = False
         if edit.is_snippet and text.endswith("($0)"):
             text = text[:-4]
+            has_brackets = False
         lex = ed.get_prop(PROP_LEXER_FILE, '')
         
         last_char_nonword = text[-1] in non_word_chars # TODO: check why this is needed
@@ -2101,6 +2102,7 @@ def debug_completion():
     tests.append( Test("ed.set_tex|t_all('')", (3,0,15,0), 'set_text_all(${1:text})$0', "ed.set_text_all('')", True, True) ) # python (jedi-language-server)
     tests.append( Test('events.Publish|Diagnostics', (7,0,25,0), 'PublishDiagnostics($0)', 'events.PublishDiagnostics', False, True) ) # python (jedi-language-server)
     tests.append( Test('static_assert|', (0,0,13,0), 'static_assert(${1:expression}, ${0:message});', 'static_assert(expression, message);', False, True) ) # cpp (clangd)
+    tests.append( Test('auto p = Game::Play|', (15,0,19,0), 'Player($0)', 'auto p = Game::Player()', True, True) ) # cpp (clangd)
     
     
     failed = 0
