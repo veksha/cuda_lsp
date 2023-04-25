@@ -76,6 +76,8 @@
 
 * enable_semantic_tokens - enable language specific symbol colorization (if supported by server). cuda_lsp tries to get additional color information for language specific symbols like classes, functions, variables, parameters, etc..
 
+* semantic_max_lines - maximum lines in editor for semantic tokens to work.
+
 * semantic_colors_* - colors for semantic tokens separated by comma, in the following order:
     * "namespace, class, method, function, variable, parameter, macro, property, enumMember, constant".
     * for example default value for "semantic_colors_light": '#BC7676,#15AD00,#BF00AF,#BF00AF,,,#FF2436,,#d79e3f,#00B3B7'

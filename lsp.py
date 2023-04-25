@@ -73,6 +73,7 @@ opt_servers_shutdown_max_time = 2 # seconds
 SERVERS_SHUTDOWN_CHECK_PERIOD = 0.1 # seconds
 
 opt_enable_semantic_tokens = False
+opt_semantic_max_lines = 10000
 opt_semantic_colors_light = '#BC7676,#15AD00,#BF00AF,#BF00AF,,,#FF2436,,#d79e3f,#00B3B7'
 opt_semantic_colors_dark = '#E38F8F,#0f0,#EB67E0,#EB67E0,,,#FF2436,,#ffe226,#0ff'
 
@@ -278,7 +279,7 @@ class Command:
         else: # sesh is loading - delay
             self._sesh_eds.append(ed_self)
 
-    def _do_on_open(self, ed_self):
+    def _do_on_open(self, ed_self: Editor):
         """ Creates 'doc' only if 'ed' is visible
                 (to not didOpen all opened files at start)
             * on new capability - only visible 'ed's are 'didOpen'-ed
@@ -318,7 +319,7 @@ class Command:
 
                 if lang.tree_enabled:
                     lang.update_tree(doc)
-                if opt_enable_semantic_tokens:
+                if opt_enable_semantic_tokens and ed_self.get_line_count() <= opt_semantic_max_lines:
                     lang.request_semantic_tokens(doc)
 
     def on_focus(self, ed_self):
@@ -382,7 +383,7 @@ class Command:
             if not opt_send_change_on_request:
                 doc.lang.send_changes(doc)
         
-        if opt_enable_semantic_tokens:
+        if opt_enable_semantic_tokens and ed_self.get_line_count() <= opt_semantic_max_lines:
             doc = self.book.get_doc(ed_self)
             if doc and doc.lang:
                 doc.lang.request_semantic_tokens(doc)
@@ -493,7 +494,7 @@ class Command:
             PanelLog.on_theme_change()
             SignaturesDialog.on_theme_change()
             
-            if opt_enable_semantic_tokens:
+            if opt_enable_semantic_tokens and ed_self.get_line_count() <= opt_semantic_max_lines:
                 for edt in get_visible_eds():
                     doc = self.book.get_doc(edt)
                     if doc and doc.lang:
@@ -754,6 +755,7 @@ class Command:
         global opt_use_cache
         global opt_servers_shutdown_max_time
         global opt_enable_semantic_tokens
+        global opt_semantic_max_lines
         global opt_semantic_colors_light
         global opt_semantic_colors_dark
         global opt_disabled_contexts
@@ -789,6 +791,7 @@ class Command:
             opt_servers_shutdown_max_time = j.get('servers_shutdown_max_time', opt_servers_shutdown_max_time)
             
             opt_enable_semantic_tokens = j.get('enable_semantic_tokens', opt_enable_semantic_tokens)
+            opt_semantic_max_lines = j.get('semantic_max_lines', opt_semantic_max_lines)
             opt_semantic_colors_light = j.get('semantic_colors_light', opt_semantic_colors_light)
             Language.semantic_colors_light = opt_semantic_colors_light
             opt_semantic_colors_dark = j.get('semantic_colors_dark', opt_semantic_colors_dark)
@@ -884,6 +887,7 @@ class Command:
             'use_cache':                 opt_use_cache,
             'servers_shutdown_max_time': opt_servers_shutdown_max_time,
             'enable_semantic_tokens':    opt_enable_semantic_tokens,
+            'semantic_max_lines':        opt_semantic_max_lines,
             'semantic_colors_light':     opt_semantic_colors_light,
             'semantic_colors_dark':      opt_semantic_colors_dark,
             'disabled_contexts':         opt_disabled_contexts,
