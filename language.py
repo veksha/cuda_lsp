@@ -1781,7 +1781,7 @@ class CompletionMan:
             return s2.lower() in s1.lower()
     
     def sort(self, item, word):
-        s1 = item.get('filterText', item['label'].strip())
+        s1 = item['label'].strip(' •')
         s2 = word
         pos_bracket = s1.find('(')
         s1 = s1 if pos_bracket == -1 else s1[:pos_bracket]
