@@ -230,10 +230,8 @@ class Hint:
 
     @classmethod
     def on_click_link(cls, id_dlg, id_ctl, data='', info=''):
-        import webbrowser
-
         if data:
-            webbrowser.open(data)
+            apx.safe_open_url(data)
 
     @classmethod
     def set_max_lines(cls, nlines):
