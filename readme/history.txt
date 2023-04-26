@@ -1,6 +1,7 @@
 2023.04.25 (by @veksha)
 + add: option "semantic_max_lines"
-- fix: wrong inserting of some auto-completion items in CLangd
+- fix: wrong inserting of some completion items in Clangd
+- fix: weird sorting of completions from Clangd
 
 2023.04.21 (by @veksha)
 + add: new option "complete_from_text" allows to append results of 'Complete From Text' plugin to LSP results (you must update that plugin too)
