@@ -494,8 +494,8 @@ class Command:
             PanelLog.on_theme_change()
             SignaturesDialog.on_theme_change()
             
-            if opt_enable_semantic_tokens and ed_self.get_line_count() <= opt_semantic_max_lines:
-                for edt in get_visible_eds():
+            for edt in get_visible_eds():
+                if opt_enable_semantic_tokens and edt.get_line_count() <= opt_semantic_max_lines:
                     doc = self.book.get_doc(edt)
                     if doc and doc.lang:
                         doc.lang.request_semantic_tokens(doc)
