@@ -482,8 +482,9 @@ class Language:
                 try:
                     compl = CompletionMan(self, carets=reqpos.carets, h_ed=reqpos.h_ed)
                     pass;       LOG_CACHE and print("using fresh results.","items:",len(items)," incomplete:",msg.completion_list['isIncomplete'])
-                    self._last_complete = compl.prepare_complete(msg.message_id, items, msg.completion_list['isIncomplete'] == 'true')
-                    if self._last_complete:
+                    _last_complete = compl.prepare_complete(msg.message_id, items, msg.completion_list['isIncomplete'] == 'true')
+                    if _last_complete:
+                        self._last_complete = _last_complete
                         compl.show_complete(self._last_complete.message_id, self._last_complete.filtered_items)
                 except AssertionError as e:
                     print("NOTE:",e)
@@ -794,12 +795,15 @@ class Language:
         
         if CompletionMan.use_cache and can_use_cached():
             compl = CompletionMan(self, carets=self._last_complete.carets)
-            self._last_complete = compl.prepare_complete(
+            _last_complete = compl.prepare_complete(
                 self._last_complete.message_id,
                 self._last_complete.items,
-                self._last_complete.is_incomplete
+                self._last_complete.is_incomplete,
+                is_cached=True
             )
-            compl.show_complete(self._last_complete.message_id, self._last_complete.filtered_items)
+            if _last_complete:
+                self._last_complete = _last_complete
+                compl.show_complete(self._last_complete.message_id, self._last_complete.filtered_items)
             return True
     
         # cache can't be used -> request data from server
@@ -1794,7 +1798,7 @@ class CompletionMan:
                 s1, # alphabetic order
                 )
     
-    def prepare_complete(self, message_id, items, is_incomplete):
+    def prepare_complete(self, message_id, items, is_incomplete, is_cached=False):
         if self.h_ed != ed.get_prop(PROP_HANDLE_SELF):
             return # wrong editor
         lex = ed.get_prop(PROP_LEXER_FILE, '')    #NOTE probably no need to check for lexer
@@ -1804,6 +1808,10 @@ class CompletionMan:
 
         _carets = ed.get_carets()
         x0,y0, _x1,_y1 = _carets[0]
+
+        # return if caret has moved
+        if not is_cached and self.carets != _carets:
+            return        
         
         filtered_items = items.copy()
         
