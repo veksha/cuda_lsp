@@ -482,8 +482,9 @@ class Language:
                 try:
                     compl = CompletionMan(self, carets=reqpos.carets, h_ed=reqpos.h_ed)
                     pass;       LOG_CACHE and print("using fresh results.","items:",len(items)," incomplete:",msg.completion_list['isIncomplete'])
-                    self._last_complete = compl.prepare_complete(msg.message_id, items, msg.completion_list['isIncomplete'])
-                    compl.show_complete(self._last_complete.message_id, self._last_complete.filtered_items)
+                    self._last_complete = compl.prepare_complete(msg.message_id, items, msg.completion_list['isIncomplete'] == 'true')
+                    if self._last_complete:
+                        compl.show_complete(self._last_complete.message_id, self._last_complete.filtered_items)
                 except AssertionError as e:
                     print("NOTE:",e)
 
