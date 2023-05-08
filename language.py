@@ -109,7 +109,7 @@ CALLABLE_COMPLETIONS = {
 RequestPos = namedtuple('RequestPos', 'h_ed carets target_pos_caret cursor_ed')
 CachedCompletion = namedtuple('CachedCompletion', 'obj message_id items filtered_items carets h_ed line_str is_incomplete')
 CompletionEdit = namedtuple('CompletionEdit', 'replace_range replace_text x y word1 word2 is_callable is_snippet cached_x')
-Test = namedtuple('Test', 'initial_text replace_range replace_text result_text is_callable is_snippet')
+Test = namedtuple('Test', 'lexer initial_text replace_range replace_text result_text is_callable is_snippet')
 
 GOTO_TITLES = {
     events.Definition:      _('Go to: definition'),
@@ -1680,11 +1680,15 @@ class CompletionMan:
         x0,y0,_,_ = _carets[0]
         self.word = get_word(x0, y0) or ('','')
         
-    def apply_completion_edit(edit: CompletionEdit):
+    def apply_completion_edit(edit: CompletionEdit, lexer=None):
+        """
+            lexer param is for test purpose
+        """
         non_word_chars = get_nonwords_chars()
         text = edit.replace_text
         line_txt = ed.get_text_line(edit.y)
-        is_bracket_follows = line_txt[edit.x+len(edit.word2):].strip()[:1] == '('
+        char_after_word = line_txt[edit.x+len(edit.word2):].strip()[:1]
+        is_bracket_follows = char_after_word == '('
         try:
             is_destructor = line_txt[edit.x-len(edit.word1)-1] == '~'
         except:
@@ -1710,13 +1714,17 @@ class CompletionMan:
         if edit.is_snippet and text.endswith("($0)"):
             text = text[:-4]
             has_brackets = False
-        lex = ed.get_prop(PROP_LEXER_FILE, '')
+        lex = lexer or ed.get_prop(PROP_LEXER_FILE, '')
         
-        last_char_nonword = text[-1] in non_word_chars # TODO: check why this is needed
+        last_char_nonword = text[-1] in non_word_chars
         if (
-                CompletionMan.auto_append_bracket and not last_char_nonword
-                and not has_brackets and edit.is_callable
-                and not is_bracket_follows and ('Bash' not in lex)
+                CompletionMan.auto_append_bracket
+                and edit.is_callable
+                and not has_brackets
+                and not is_bracket_follows
+                and not last_char_nonword
+                and ('Bash' not in lex)
+                and not ('Rust' in lex and char_after_word == '!')
            ):
             text += '()'
             
@@ -1763,16 +1771,16 @@ class CompletionMan:
         word = get_word(cr_pos, cr_y)
         (word1, word2) = word if word else ('', '')
         
-        edit = CompletionEdit(test.replace_range, test.replace_text, cr_pos, cr_y, word1, word2, test.is_callable, test.is_snippet ,cached_pos)
-        CompletionMan.apply_completion_edit(edit)
+        edit = CompletionEdit(test.replace_range, test.replace_text, cr_pos, cr_y, word1, word2, test.is_callable, test.is_snippet, cached_pos)
+        CompletionMan.apply_completion_edit(edit, lexer=test.lexer)
         
         line = ed.get_text_line(cr_y)
         type_str = "  snippet" if test.is_snippet else "plaintext"
         if line == test.result_text:
-            print(f"passed {type_str}: {test.initial_text}")
+            print(f"passed {type_str} {test.lexer}: {test.initial_text}")
             return True
         else:
-            print(f"ERROR: failed {type_str}: {test.initial_text} ===> {line} (must be {test.result_text})")
+            print(f"ERROR: failed {type_str} {test.lexer}: {test.initial_text} ===> {line} (must be {test.result_text})")
             return False
         
     def filter(self, item, word):
@@ -1961,8 +1969,8 @@ class CompletionMan:
                 initial_text = initial_text[:cached_x]+'|'+initial_text[cached_x:]
             leading_spaces = len(line_txt) - len(line_txt.lstrip(' '))
             initial_text = initial_text[leading_spaces:]
-            test_str = "Test('{}', ({},{},{},{}), '{}', 'PASTE_RESULT_HERE', {}, {})".format( initial_text,
-                        x1-leading_spaces, 0, x2-leading_spaces, 0, text, is_callable, is_snippet)
+            test_str = "Test('{}', '{}', ({},{},{},{}), '{}', 'PASTE_RESULT_HERE', {}, {})".format(
+                lex, initial_text, x1-leading_spaces, 0, x2-leading_spaces, 0, text, is_callable, is_snippet)
             print(test_str)
         
         edit = CompletionEdit((x1, y1, x2, y2), text, x0, y0, word1, word2, is_callable, is_snippet, cached_x) 
@@ -2084,34 +2092,35 @@ def debug_completion():
     # in these tests "|" symbol means caret
     # two such symbols means that first one is caret pos from cached data and second one is actual caret pos
     #                    initial_text     range    replace_text     result                                callable  snippet
-    tests.append( Test('#include "|"', (10,0,11,0), 'DbgHelp.h"', '#include "DbgHelp.h"',                    False, False) ) # cpp (clangd)
-    tests.append( Test('#include "std|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',                 False, False) ) # cpp (clangd)
-    tests.append( Test('    cout|', (4,0,8,0), 'std::cout', '    std::cout',                                 False, False) ) # cpp (clangd)
-    tests.append( Test('    std::c|ou', (9,0,10,0), 'cout', '    std::cout',                                 False, False) ) # cpp (clangd)
-    tests.append( Test('    pr|intln("hello, world")', (4,0,11,0), 'print', '    print("hello, world")',     False, False) ) # scala
-    tests.append( Test('System.out.|pr|int("The sum is: " + sum);', (11,0,16,0), 'print',
+    tests.append( Test('C', '#include "|"', (10,0,11,0), 'DbgHelp.h"', '#include "DbgHelp.h"',                    False, False) ) # cpp (clangd)
+    tests.append( Test('C', '#include "std|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',                 False, False) ) # cpp (clangd)
+    tests.append( Test('C', '    cout|', (4,0,8,0), 'std::cout', '    std::cout',                                 False, False) ) # cpp (clangd)
+    tests.append( Test('C', '    std::c|ou', (9,0,10,0), 'cout', '    std::cout',                                 False, False) ) # cpp (clangd)
+    tests.append( Test('Scala', '    pr|intln("hello, world")', (4,0,11,0), 'print', '    print("hello, world")',     False, False) ) # scala
+    tests.append( Test('Java', 'System.out.|pr|int("The sum is: " + sum);', (11,0,16,0), 'print',
                          'System.out.print("The sum is: " + sum);',                                          True,  True ) ) # java
-    tests.append( Test('pr|', (0,0,2,0), 'print', 'print()',                                                 True,  False) ) # python
-    tests.append( Test('pr|int(test_str)', (0,0,5,0), 'print', 'print(test_str)',                            False, False) ) # python
-    tests.append( Test('pr|in|t(test_str)', (0,0,5,0), 'print', 'print(test_str)',                           True,  False) ) # python
-    tests.append( Test('import pr|e|', (0,0,9,0), "import { PredicateResult$1 } from 'web-tree-sitter'",
+    tests.append( Test('Python', 'pr|', (0,0,2,0), 'print', 'print()',                                                 True,  False) ) # python
+    tests.append( Test('Python', 'pr|int(test_str)', (0,0,5,0), 'print', 'print(test_str)',                            False, False) ) # python
+    tests.append( Test('Python', 'pr|in|t(test_str)', (0,0,5,0), 'print', 'print(test_str)',                           True,  False) ) # python
+    tests.append( Test('TypeScript', 'import pr|e|', (0,0,9,0), "import { PredicateResult$1 } from 'web-tree-sitter'",
                                                   "import { PredicateResult } from 'web-tree-sitter'",       False,  True) ) # typescript
-    tests.append( Test('import |pr|', (0,0,6,0),  "import { PredicateResult$1 } from 'web-tree-sitter'",
+    tests.append( Test('TypeScript', 'import |pr|', (0,0,6,0),  "import { PredicateResult$1 } from 'web-tree-sitter'",
                                                   "import { PredicateResult } from 'web-tree-sitter'",      False,  True) ) # typescript
-    tests.append( Test("import { Logger } from '|vs|'", (24,0,26,0), 'vscode-languageserver',
+    tests.append( Test('TypeScript', "import { Logger } from '|vs|'", (24,0,26,0), 'vscode-languageserver',
                                                   "import { Logger } from 'vscode-languageserver'",          False, False) ) # typescript
-    tests.append( Test('f|u|', (0,0,1,0), 'func1()', 'func1()',                                              True,  True ) ) # cpp (clangd)
-    tests.append( Test('#include "Dbg|hel|', (10,0,13,0), 'DbgHelp.h"', '#include "DbgHelp.h"',              False, False) ) # cpp (clangd)
-    tests.append( Test('#include "std|io|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',              False, False) ) # cpp (clangd)
-    tests.append( Test('select|', (0,0,6,0), 'select', 'select()',                                           True,   True) ) # lua
-    tests.append( Test('~p|l|Player()', (1,0,2,0), 'Player', '~Player()',                                    False, False) ) # cpp (clangd)
-    tests.append( Test('~~P|layer()', (2,0,3,0), '~Player()', '~~Player()',                                 True,   True) ) # cpp (clangd)
-    tests.append( Test('~P|layer()', (1,0,2,0), '~Player()', '~Player()',                                    True,   True) ) # cpp (clangd)
-    tests.append( Test('_Analysis_m|ode_(wqe qwe qw)', (0,0,11,0), '_Analysis_mode_(${1:mode})', '_Analysis_mode_(wqe qwe qw)', False, True) ) # cpp (clangd)
-    tests.append( Test("ed.set_tex|t_all('')", (3,0,15,0), 'set_text_all(${1:text})$0', "ed.set_text_all('')", True, True) ) # python (jedi-language-server)
-    tests.append( Test('events.Publish|Diagnostics', (7,0,25,0), 'PublishDiagnostics($0)', 'events.PublishDiagnostics', False, True) ) # python (jedi-language-server)
-    tests.append( Test('static_assert|', (0,0,13,0), 'static_assert(${1:expression}, ${0:message});', 'static_assert(expression, message);', False, True) ) # cpp (clangd)
-    tests.append( Test('auto p = Game::Play|', (15,0,19,0), 'Player($0)', 'auto p = Game::Player()', True, True) ) # cpp (clangd)
+    tests.append( Test('Lua', 'select|', (0,0,6,0), 'select', 'select()',                                           True,   True) ) # lua
+    tests.append( Test('C', 'f|u|', (0,0,1,0), 'func1()', 'func1()',                                              True,  True ) ) # cpp (clangd)
+    tests.append( Test('C', '#include "Dbg|hel|', (10,0,13,0), 'DbgHelp.h"', '#include "DbgHelp.h"',              False, False) ) # cpp (clangd)
+    tests.append( Test('C', '#include "std|io|io.h"', (10,0,18,0), 'stdio.h"', '#include "stdio.h"',              False, False) ) # cpp (clangd)
+    tests.append( Test('C', '~p|l|Player()', (1,0,2,0), 'Player', '~Player()',                                    False, False) ) # cpp (clangd)
+    tests.append( Test('C', '~~P|layer()', (2,0,3,0), '~Player()', '~~Player()',                                 True,   True) ) # cpp (clangd)
+    tests.append( Test('C', '~P|layer()', (1,0,2,0), '~Player()', '~Player()',                                    True,   True) ) # cpp (clangd)
+    tests.append( Test('C', '_Analysis_m|ode_(wqe qwe qw)', (0,0,11,0), '_Analysis_mode_(${1:mode})', '_Analysis_mode_(wqe qwe qw)', False, True) ) # cpp (clangd)
+    tests.append( Test('Python', "ed.set_tex|t_all('')", (3,0,15,0), 'set_text_all(${1:text})$0', "ed.set_text_all('')", True, True) ) # python (jedi-language-server)
+    tests.append( Test('Python', 'events.Publish|Diagnostics', (7,0,25,0), 'PublishDiagnostics($0)', 'events.PublishDiagnostics', False, True) ) # python (jedi-language-server)
+    tests.append( Test('C', 'static_assert|', (0,0,13,0), 'static_assert(${1:expression}, ${0:message});', 'static_assert(expression, message);', False, True) ) # cpp (clangd)
+    tests.append( Test('C', 'auto p = Game::Play|', (15,0,19,0), 'Player($0)', 'auto p = Game::Player()', True, True) ) # cpp (clangd)
+    tests.append( Test('Rust', 'print|ln!("{}", response);', (0,0,7,0), 'println', 'println!("{}", response);', True, False) ) # rust analyzer
     
     
     failed = 0
