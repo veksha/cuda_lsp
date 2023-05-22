@@ -44,7 +44,9 @@ from .book import EditorDoc
 ver = sys.version_info
 if (ver.major, ver.minor) < (3, 7):
     modules36_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lsp_modules36')
-    sys.path.append(modules36_dir)
+    #sys.path.append(modules36_dir)
+    # instead of append use insert
+    sys.path.insert(0, modules36_dir)
 
 
 from .sansio_lsp_client import client as lsp
