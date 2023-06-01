@@ -1,3 +1,6 @@
+2023.06.01 (by @veksha)
+- fix: AttributeError with "enable_code_tree": true (thanks KDBalashevich)
+
 2023.04.25 (by @veksha)
 + add: option "semantic_max_lines"
 - fix: wrong inserting of some completion items in Clangd
