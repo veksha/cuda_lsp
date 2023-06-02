@@ -236,8 +236,12 @@ class EditorDoc:
 
     def range2carets(range):
         #x1,y1,x2,y2
-        return (range.get('start')['character'],
-                range.get('start')['line'],
-                range.get('end')['character'],
-                range.get('end')['line'])
+        if isinstance(range, dict):
+            return (range.get('start')['character'],
+                    range.get('start')['line'],
+                    range.get('end')['character'],
+                    range.get('end')['line'])
+        else:
+            return (range.start.character, range.start.line,  range.end.character, range.end.line,)
+        
 
