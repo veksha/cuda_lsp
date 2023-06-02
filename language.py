@@ -1278,7 +1278,7 @@ class DiagnosticsMan:
             else: # not visible, update when visible
                 self.dirtys.add(uri)
 
-    def _apply_diagnostics(self, ed, diag_list):
+    def _apply_diagnostics(self, ed: Editor, diag_list):
         self.logger.clear_diagnostics()
         if self._linttype  or  self._highlight_bg:
             self._clear_old(ed)
@@ -1294,10 +1294,13 @@ class DiagnosticsMan:
             line_diags = self._get_gutter_data(diag_list)
 
             filename_added = False
+            ed_line_count = ed.get_line_count()
 
             err_ranges = []  # tuple(x,y,len)
             # apply gutter to editor
             for nline,diags in line_diags.items():
+                nline = min(nline, ed_line_count-1)
+                
                 severity_la = lambda d: d.severity or 9
                 if self._linttype == DiagnosticsMan.LINT_DECOR:
                     decor_severity = min(severity_la(d) for d in diags) # most severe severity  for decor
@@ -1333,8 +1336,8 @@ class DiagnosticsMan:
 
                 # gather err ranges
                 for d in diags:
-                    x0,y0 = d.range.start.character, d.range.start.line
-                    x1,y1 = d.range.end.character, d.range.end.line
+                    x0,y0 = d.range.start.character, min(d.range.start.line, nline)
+                    x1,y1 = d.range.end.character, min(d.range.end.line, nline)
                     if y0 == y1:   # single line (shortcut for common case)
                         err_ranges.append((x0, y0, x1-x0))
                     else: # multiline
