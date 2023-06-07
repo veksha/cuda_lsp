@@ -120,8 +120,8 @@ class Hint:
     @classmethod
     def show(cls, text, caret, cursor_loc_start, markupkind=None, language=None, caret_cmds=None):
 
-        if not ed.get_prop(PROP_FOCUSED):
-            return # show Hint only if editor is focused (and not autocompletion dialog)
+        #if not ed.get_prop(PROP_FOCUSED):
+        #    return # show Hint only if editor is focused (and not autocompletion dialog)
 
         if not text:
             return

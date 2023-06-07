@@ -412,9 +412,9 @@ class Command:
         if Hint.is_under_cursor()  or  Hint.is_visible():      return
 
         doc = self.book.get_doc(ed_self)
-        if ed_self.get_prop(PROP_FOCUSED):
-            caret = ed_self.convert(CONVERT_PIXELS_TO_CARET, x, y, "")
-            self.call_hover(ed_self, caret)
+        #if ed_self.get_prop(PROP_FOCUSED):
+        caret = ed_self.convert(CONVERT_PIXELS_TO_CARET, x, y, "")
+        self.call_hover(ed_self, caret)
 
     #@command
     def on_func_hint(self, ed_self):
