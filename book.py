@@ -223,16 +223,23 @@ class EditorDoc:
 
     #def apply_edit(ed: Editor, edit: TextEdit):
     def apply_edit(ed, edit):
-        x1,y1,x2,y2 = EditorDoc.range2carets(edit.get('range'))
+        if isinstance(edit, dict):
+            range = edit.get('range')
+            newText = edit.get('newText')
+        else:
+            range = edit.range
+            newText = edit.newText
+
+        x1,y1,x2,y2 = EditorDoc.range2carets(range)
         
         while ed.get_line_count() <= y2:
             ed.set_text_line(-2, '')
         
         if x1==x2 and y1==y2:
             #NOTE: need 'insert' because cant `replace()'` beyond text end
-            ed.insert(x1,y1, edit.get('newText'))
+            ed.insert(x1,y1, newText)
         else:
-            ed.replace(x1,y1,x2,y2, edit.get('newText'))
+            ed.replace(x1,y1,x2,y2, newText)
 
     def range2carets(range):
         #x1,y1,x2,y2
