@@ -1,3 +1,6 @@
+2023.07.27 (by @veksha)
+- fix: error when formatting code by LSP server
+
 2023.06.01 (by @veksha)
 - fix: AttributeError with "enable_code_tree": true (thanks KDBalashevich)
 
