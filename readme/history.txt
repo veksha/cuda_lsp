@@ -1,3 +1,6 @@
+2023.09.08 (by @veksha)
+- fix: support None-lexer for Vale server
+
 2023.07.27 (by @veksha)
 - fix: error when formatting code by LSP server
 
