@@ -744,6 +744,8 @@ class Language:
 
     def is_in_comment_or_string(self, _ed, x, y):
         context = _ed.get_token(TOKEN_GET_KIND, x, y)
+        if context is None: # return False for none lexer
+            return False
         
         if self._disabled_contexts_for_server is not None:
             return context in self._disabled_contexts_for_server
@@ -1626,7 +1628,7 @@ class ServerConfig:
 
         # checking because C# gives empty selector: just by scheme -- scheme is ignored
         # 'True' if have valid condition
-        return bool(language) or bool(pattern)
+        return language is not None or bool(pattern)
 
     def filter_commands(self, cmds):
         # 'textDocument/didOpen' => 'didopen'
