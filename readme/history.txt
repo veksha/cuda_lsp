@@ -1,3 +1,6 @@
+2023.11.04
+- fix: update typing_extensions.py from last version to fix work on Py 3.12 (thanks @KDBalashevich)
+
 2023.09.08 (by @veksha)
 - fix: support None-lexer for Vale server
 
