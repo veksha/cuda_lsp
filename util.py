@@ -95,7 +95,10 @@ def uri_to_path(uri):
     from urllib.request import url2pathname
 
     path = urlparse(uri).path
-    return url2pathname(unquote(path))
+    try:
+        return url2pathname(unquote(path))
+    except OSError as e:
+        return path
 
 def collapse_path(path):
     if path  and  (path + os.sep).startswith(USER_DIR + os.sep):
@@ -168,6 +171,15 @@ def split_text_by_length(text, max_length, prepare_for_corner=False):
             parts.append(current_part)
         lines_out.extend(parts)
     return '\n'.join(lines_out)
+def generate_color(string):
+    import colorsys
+    hash_value = hash(string)
+    hue = hash_value % 360
+    saturation = 0.5
+    lightness = 0.5
+    r, g, b = colorsys.hls_to_rgb(hue / 360, lightness, saturation)
+    color = '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
+    return color
 
 
 class TimerScheduler:

@@ -34,7 +34,7 @@ def _make_request(
         content["params"] = params
     if id is not None:
         content["id"] = id
-    encoded_content = json.dumps(content).encode(encoding)
+    encoded_content = json.dumps(content, ensure_ascii=False).encode(encoding)
 
     # Write the headers to the request body
     request += _make_headers(content_length=len(encoded_content), encoding=encoding)
@@ -68,7 +68,7 @@ def _make_response(
 	 # This member MUST NOT exist if there was an error invoking the method.
 	 #
 
-    encoded_content = json.dumps(content).encode(encoding)
+    encoded_content = json.dumps(content, ensure_ascii=False).encode(encoding)
 
     # Write the headers to the request body
     request += _make_headers(content_length=len(encoded_content), encoding=encoding)

@@ -34,8 +34,8 @@ from .util import (
         normalize_drive_letter,
         replace_unbracketed,
         TimerScheduler,
-
         ValidationError,
+        generate_color
     )
 from .dlg import Hint, SEVERITY_MAP, SignaturesDialog, TYPE_DIAG
 from .dlg import PanelLog, SEVERITY_ERR, SEVERITY_LOG
@@ -124,6 +124,8 @@ GOTO_TITLES = {
 
 
 class Language:
+    logHTML = None
+    
     semantic_colors_light = None
     semantic_colors_dark = None
     disabled_contexts = None
@@ -353,7 +355,9 @@ class Language:
                 
                 if not_headers:
                     for s in not_headers:
-                        self.plog.log_str(s.decode(), type_='stdout')
+                        s = s.decode()
+                        if Language.logHTML: Language.logHTML("stdout(<span style='color:"+generate_color(self.name)+"'>"+self.name+"</span>): ", s)
+                        self.plog.log_str(s, type_='stdout')
 
                 if header_bytes == b'':
                     pass;       LOG and print('NOTE: reader stopping')
@@ -417,6 +421,11 @@ class Language:
             while not self._read_q.empty():
                 data = self._read_q.get()
 
+                if Language.logHTML:
+                    self.client.log_method = lambda s: Language.logHTML(
+                        "<span style='color:Fuchsia'><<<</span>(<span style='color:"+generate_color(self.name)+"'>"+self.name+"</span>) ",
+                        s.replace("\r\n","\\r\\n")
+                    )
                 events = self.client.recv(data, errors=errors)
 
                 limit = 100 # limit characters of the error message
@@ -445,10 +454,16 @@ class Language:
             if send_buf:
                 self._send_q.put(send_buf)
                 self._timer.restart()
+                if Language.logHTML:
+                    Language.logHTML(
+                        "<span style='color:blue'>>>></span>(<span style='color:"+generate_color(self.name)+"'>"+self.name+"</span>) ",
+                        send_buf.decode().replace("\r\n","\\r\\n")
+                    )
 
             # stderr Queue
             while not self._err_q.empty():
                 s = self._err_q.get()
+                if Language.logHTML: Language.logHTML("<span style='color:red'>stderr</span>(<span style='color:"+generate_color(self.name)+"'>"+self.name+"</span>): ", s.strip())
                 self.plog.log_str(s, type_='stderr')
 
         except Exception as ex:
@@ -461,6 +476,13 @@ class Language:
     def _on_lsp_msg(self, msg):
         if DEBUG_MESSAGES:
             self._dbg_msgs = (self._dbg_msgs + [msg])[-128:]
+        #if Language.logHTML:
+        #    name = "<span style='color:gray'>"+self.name+"</span>"
+        #    name += ": <span style='color:green'>"+type(msg).__name__+"</span>"
+        #    #if hasattr(msg,'message'):
+        #    #    name += ": <span style='color:gray'>"+msg.message+"</span>"
+        #    name += ": " + str(msg.dict())
+        #    Language.logHTML(name)
 
         msgtype = type(msg)
 
@@ -1758,11 +1780,16 @@ class CompletionMan:
         pos = 0
         # remove chars present in replace_text from non_word_chars
         non_word_chars = ''.join([c for c in non_word_chars if c not in edit.replace_text])
-        non_word_chars += '()' # but keep these always
+        non_word_chars += ' ()' # but keep these always
         
         for i, char in enumerate(line_txt[edit.cached_x:]):
-            if char in (non_word_chars+' '):      break
-            else:                           pos += 1
+            if char in non_word_chars:
+                break
+            elif char == '=':
+                pos += 1
+                break
+            else:
+                pos += 1
         x1 = min(edit.replace_range[0], edit.cached_x)
         x2 = max(edit.replace_range[2], edit.cached_x+pos)
         
@@ -1935,9 +1962,19 @@ class CompletionMan:
         c1 = appx.int_to_html_color(_colors['ListFontHilite']['color'])
         c2 = appx.int_to_html_color(_colors['ListCompleteParams']['color'])
         
-        def add_html_tags(text, item_kind, filter_text):
+        def add_html_tags(item, filter_text):
             if api_ver < '1.0.433':    return text
-            #if item_kind in CALLABLE_COMPLETIONS:   text = '<u>'+text+'</u>'
+
+            text = item['label']
+
+            text_additional = ""
+            if item.get('labelDetails') is not None:
+                if item['labelDetails'].get('detail') is not None:
+                    text_additional += item['labelDetails']['detail']
+                if item['labelDetails'].get('description') is not None:
+                    text_additional += " " + item['labelDetails']['description']
+
+            #if item['kind'] in CALLABLE_COMPLETIONS:   text = '<u>'+text+'</u>'
             pos_bracket = text.find('(')
             s = text if pos_bracket == -1 else text[:pos_bracket] 
             pos = s.find(filter_text) # case-sensitive
@@ -1955,7 +1992,9 @@ class CompletionMan:
             for p in parts:
                 if p[1]:    text += '<font color="{}">{}</font>'.format(p[1], p[0])
                 else:       text += p[0]
-            return '<html>'+text
+            if text_additional:
+                text += '<font color="{}">{}</font>'.format(c2, text_additional)
+            return '<html>'+text            
         
         def short_version(s):
             s = s.replace('function', 'func')
@@ -1968,7 +2007,7 @@ class CompletionMan:
             return s
         
         words = ['{}\t{}\t{}|{}'.format(
-                    add_html_tags(item['label'], item['kind'], word1),
+                    add_html_tags(item, word1),
                     short_version(item['kind'] and CompletionItemKind(item['kind']).name.lower() or ''),
                     message_id, i)
                     for i,item in enumerate(items)
@@ -2182,7 +2221,7 @@ def debug_completion():
     tests.append( Test('C', 'static_assert|', (0,0,13,0), 'static_assert(${1:expression}, ${0:message});', 'static_assert(expression, message);', False, True) ) # cpp (clangd)
     tests.append( Test('C', 'auto p = Game::Play|', (15,0,19,0), 'Player($0)', 'auto p = Game::Player()', True, True) ) # cpp (clangd)
     tests.append( Test('Rust', 'print|ln!("{}", response);', (0,0,7,0), 'println', 'println!("{}", response);', True, False) ) # rust analyzer
-    
+    tests.append( Test('Python', 'buf|=1', (0,0,3,0), 'bufsize=', 'bufsize=1', False, False) )
     
     failed = 0
     for test in tests:

@@ -97,7 +97,8 @@ CAPABILITIES = {
         'completion': {
             'dynamicRegistration': True,
             'completionItem': {
-                'snippetSupport': True
+                'snippetSupport': True,
+                'labelDetailsSupport': True
             },
             'completionItemKind': {
                 'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
@@ -207,6 +208,8 @@ class Client:
 
         # Things that we still need to send.
         self._send_buf = bytearray()
+        
+        self.log_method = None
 
         # Keeps track of which IDs match to which unanswered requests.
         self._unanswered_requests: t.Dict[Id, Request] = {}
@@ -464,6 +467,8 @@ class Client:
 
     def recv(self, data: bytes, errors: t.Optional[list] = None) -> t.List[Event]:
         self._recv_buf += data
+        
+        if self.log_method: self.log_method(data.decode())
 
         # _parse_messages deletes consumed data from self._recv_buf
         messages = list(_parse_messages(self._recv_buf))
