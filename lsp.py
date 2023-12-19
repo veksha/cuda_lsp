@@ -277,7 +277,10 @@ class Command:
     #NOTE also gets called for unsaved from session
     def on_open(self, ed_self):
         if not self.is_loading_sesh:
-            self._do_on_open(ed_self)
+            # there was a bug: if on startup second tab is active
+            # LSP server is still started for 1st (inactive) tab and 2nd tab too.
+            # using timer here fixes this issue
+            timer_proc(TIMER_START_ONE, lambda *args: self._do_on_open(ed_self), 500)
         else: # sesh is loading - delay
             self._sesh_eds.append(ed_self)
 
