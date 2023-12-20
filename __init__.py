@@ -6,90 +6,7 @@ import http.server
 import socketserver
 import html
 import re
-
-htmlpage = """
-<!DOCTYPE html>
-<html>
-<head>
-  <title>LSP monitor</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-  <script>
-    $(document).ready(function() {
-      $(".spoiler-content").click(function() {
-        $("#dynamic-text").toggleClass("running");
-      });
-    
-      // Function to fetch and update data
-      function fetchData() {
-        $.ajax({
-          url: "/get",
-          method: "GET",
-          success: function(response) {
-            // Add the received text to the DOM
-            var element = $(".running")
-            element.html(response);
-          },
-          error: function() {
-            console.log("Error occurred while fetching data.");
-          }
-        });
-      }
-
-      // Call fetchData every second
-      setInterval(fetchData, 1000);
-      
-      const spoilerTitle = document.querySelector('.spoiler-title');
-      const spoilerContent = document.querySelector('.spoiler-content');
-      
-      spoilerTitle.addEventListener('click', function() {
-        spoilerContent.style.display = spoilerContent.style.display === 'inline-block' ? 'none' : 'inline-block';
-      });
-      spoilerContent.addEventListener('click', function() {
-        var currentText = $(this).text().trim();
-        if (currentText === 'pause') {
-          $(this).text('continue');
-        } else {
-          $(this).text('pause');
-        }
-      });
-    });
-  </script>
-  <style>
-    .spoiler-content {
-      display: none;
-      cursor: pointer;
-    }
-    .spoiler-content:hover {
-      text-decoration: underline;
-    }
-    
-    .spoiler-title {
-      display: inline-block;    
-      cursor: pointer;
-    }
-    
-    .spoiler-title:hover {
-      text-decoration: underline;
-    }
-    .nowrap {
-        white-space: pre;
-    }
-  </style>
-</head>
-<body>
-  <h4 style="margin: 0px">CudaText LSP monitor</h4>
-  <div class="spoiler">
-    <div class="spoiler-title">
-      menu
-    </div>
-    <div class="spoiler-content">
-      pause
-    </div>
-  </div>
-  <div id="dynamic-text" class="running nowrap">Loading...</div>
-</body>
-</html>
-"""
+import os
 
 lines = []
 
@@ -134,8 +51,13 @@ def start_http_server():
         httpd = socketserver.TCPServer(('127.0.0.1', 8000), handler)
         httpd.serve_forever()
     except OSError as e:
+
         print("Error: Cuda_LSP, html log: " + str(e))
 
+# load page
+f = open(os.path.dirname(os.path.abspath(__file__)) + "/log_page.html")
+htmlpage = f.read()
+f.close()
 
 # Start the HTTP server and text output threads
 http_server_thread = threading.Thread(target=start_http_server)
