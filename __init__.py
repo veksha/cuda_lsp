@@ -15,6 +15,8 @@ def addLine(prefix, line):
     line = re.sub(r"^Content-Length:.+?\\r\\n\\r\\n", r"", line)
     line = re.sub(r"Content-Length:.+?\\r\\n\\r\\n{", r"\n\t\t\t     {", line)
     line = prefix + html.escape(line)
+    line = re.sub(r"&quot;id&quot;(:\s*\d+)", r"<span style='color:red'>&quot;id&quot;\1</span>", line)
+    line = str(len(lines)+1) + ". " + line
     lines.append(line)
 
 # Define the HTTP request handler
