@@ -42,7 +42,15 @@ htmlpage = """
       const spoilerContent = document.querySelector('.spoiler-content');
       
       spoilerTitle.addEventListener('click', function() {
-        spoilerContent.style.display = spoilerContent.style.display === 'block' ? 'none' : 'block';
+        spoilerContent.style.display = spoilerContent.style.display === 'inline-block' ? 'none' : 'inline-block';
+      });
+      spoilerContent.addEventListener('click', function() {
+        var currentText = $(this).text().trim();
+        if (currentText === 'pause') {
+          $(this).text('continue');
+        } else {
+          $(this).text('pause');
+        }
       });
     });
   </script>
@@ -50,15 +58,14 @@ htmlpage = """
     .spoiler-content {
       display: none;
       cursor: pointer;
-      padding-bottom:15px
     }
     .spoiler-content:hover {
       text-decoration: underline;
     }
     
     .spoiler-title {
+      display: inline-block;    
       cursor: pointer;
-      padding-bottom: 5px;
     }
     
     .spoiler-title:hover {
@@ -104,7 +111,10 @@ class MyRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Content-type", "text/html; charset=utf-8")
         self.send_header("Content-length", str(len(text)))
         self.end_headers()
-        self.wfile.write(text)
+        try:
+            self.wfile.write(text)
+        except BrokenPipeError:
+            pass
 
     
     def do_GET(self):
@@ -119,8 +129,13 @@ class MyRequestHandler(http.server.SimpleHTTPRequestHandler):
 def start_http_server():
     Language.logHTML = addLine
     handler = MyRequestHandler
-    httpd = socketserver.TCPServer(('127.0.0.1', 8000), handler)
-    httpd.serve_forever()
+    socketserver.TCPServer.allow_reuse_address = True # needed for linux
+    try:
+        httpd = socketserver.TCPServer(('127.0.0.1', 8000), handler)
+        httpd.serve_forever()
+    except OSError as e:
+        print("Error: Cuda_LSP, html log: " + str(e))
+
 
 # Start the HTTP server and text output threads
 http_server_thread = threading.Thread(target=start_http_server)
