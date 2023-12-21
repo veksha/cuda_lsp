@@ -973,9 +973,17 @@ class Language:
             else:
                 targets = list(targets)
                 # ((dir,filename), line)
-                names = ((os.path.split(path), range_.start.line+1)  for path,range_ in targets)
+                names = [(os.path.split(path), range_.start.line+1)  for path,range_ in targets] # must be a list, not a generator
+                # new feature: preselect item with the same line as where the caret currently is
+                cur_line = ed.get_carets()[0][1]
+                focused = 0
+                for i,name in enumerate(names):
+                    if name[1] == cur_line+1 and name[0][1] == ed.get_prop(PROP_TAB_TITLE):
+                        focused = i
+                        break
+
                 names = [f'{fn}, line {nline}\t{collapse_path(folder)}' for (folder,fn),nline in names]
-                ind = dlg_menu(DMENU_LIST_ALT, names, caption=dlg_caption)
+                ind = dlg_menu(DMENU_LIST_ALT, names, caption=dlg_caption, focused=focused)
                 if ind is None:
                     return
                 item = items[ind]
