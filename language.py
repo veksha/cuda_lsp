@@ -257,6 +257,7 @@ class Language:
         def connect_via_tcp():
             print(_('{}: {} - connecting via TCP, port: {}').format(
                   LOG_NAME, self.lang_str, self._tcp_port))
+            if Language.logHTML: Language.logHTML(self.name+", [TCP]: "," ".join(self._server_cmd))
 
             self.sock = _connect_tcp(port=self._tcp_port)
             if self.sock is None:
@@ -270,6 +271,7 @@ class Language:
         def connect_via_stdin():
             print(_('{}: starting server - {}; root: {}').format(
                   LOG_NAME, self.lang_str, self._work_dir))
+            if Language.logHTML: Language.logHTML(self.name+", [STDIO]: "," ".join(self._server_cmd))
 
             env = ServerConfig.prepare_env(self._env_paths)
 

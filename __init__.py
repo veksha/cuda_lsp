@@ -1,5 +1,6 @@
 from .lsp import Command
 from .language import Language
+from .util import generate_color
 
 import threading
 import http.server
@@ -14,8 +15,15 @@ def addLine(prefix, line):
     global lines
     line = re.sub(r"^Content-Length:.+?\\r\\n\\r\\n", r"", line)
     line = re.sub(r"Content-Length:.+?\\r\\n\\r\\n{", r"\n\t\t\t     {", line)
-    line = prefix + html.escape(line)
-    line = re.sub(r"&quot;id&quot;(:\s*\d+)", r"<span style='color:red'>&quot;id&quot;\1</span>", line)
+    
+    m = re.search(r'"id":\s*(\d+)', line)
+    if m:
+        id = "ID: "+m.group(1)
+        line = "<span style='color:"+generate_color(id)+"'>"+id + "</span>, " + prefix + html.escape(line)
+    else:
+        line = "--------" + prefix + html.escape(line)
+    line = re.sub(r'(&quot;method&quot;:\s*&quot;)(.+?)(&quot;)', r"\1<span style='color:OrangeRed'>\2</span>\3", line)
+    line = re.sub(r"(ID:\s*\d+),", r"<span style='color:red'>\1</span>", line)
     line = str(len(lines)+1) + ". " + line
     lines.append(line)
 
