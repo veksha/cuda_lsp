@@ -175,8 +175,8 @@ def generate_color(string):
     import colorsys
     hash_value = hash(string)
     hue = hash_value % 360
-    saturation = 0.5
-    lightness = 0.5
+    saturation = 0.8
+    lightness = 0.4
     r, g, b = colorsys.hls_to_rgb(hue / 360, lightness, saturation)
     color = '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
     return color
