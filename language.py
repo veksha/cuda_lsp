@@ -208,7 +208,8 @@ class Language:
                 process_id=os.getpid(),
                 settings=expand_dict_dots(self._cfg["settings"])
             )
-            self._start_server()
+            is_tcp_server = self._server_cmd and 'pyright' in self._server_cmd[0]
+            self._start_server(is_tcp_server=is_tcp_server)
         return self._client
 
     @property
@@ -248,13 +249,13 @@ class Language:
         return False
 
 
-    def _start_server(self):
+    def _start_server(self, is_tcp_server):
 
         def connect_via_tcp():
             print(_('{}: {} - connecting via TCP, port: {}').format(
                   LOG_NAME, self.lang_str, self._tcp_port))
 
-            self.sock = _connect_tcp(port=self._tcp_port)
+            self.sock = _connect_tcp(port=self._tcp_port, is_server=is_tcp_server)
             if self.sock is None:
                 print('NOTE: ' + _('{}: {} - Failed to connect on port {}').format(
                       LOG_NAME, self.lang_str, self._tcp_port))
@@ -1210,14 +1211,24 @@ class Language:
         print('*** registrations: ', pprint.pformat(self.scfg.capabs))
 
 
-def _connect_tcp(port):
-    start_time = time.time()
-    while time.time() - start_time < TCP_CONNECT_TIMEOUT:
-        try:
-            return socket.create_connection(('localhost', port))
-        except ConnectionRefusedError:
-            pass
-    return None
+def _connect_tcp(port, is_server = False):
+    if is_server:
+        with socket.create_server(('', port)) as server:
+            server.settimeout(TCP_CONNECT_TIMEOUT)
+            conn = None
+            try:
+                conn, addr = server.accept()
+            except:
+                pass
+            return conn
+    else:
+        start_time = time.time()
+        while time.time() - start_time < TCP_CONNECT_TIMEOUT:
+            try:
+                return socket.create_connection(('localhost', port))
+            except ConnectionRefusedError:
+                pass
+        return None
 
 
 TOKENS_TAG = app_proc(PROC_GET_UNIQUE_TAG, '')
