@@ -1,3 +1,6 @@
+2023.12.25 (by @veksha)
++ add: in Goto References dialog, preselect item which is equal to current line
+
 2023.11.04
 - fix: update typing_extensions.py from last version to fix work on Py 3.12 (thanks @KDBalashevich)
 
