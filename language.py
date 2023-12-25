@@ -978,7 +978,7 @@ class Language:
                 cur_line = ed.get_carets()[0][1]
                 focused = 0
                 for i,name in enumerate(names):
-                    if name[1] == cur_line+1 and name[0][1] == ed.get_prop(PROP_TAB_TITLE):
+                    if name[1] == cur_line+1 and name[0][0]+os.path.sep+name[0][1] == ed.get_filename():
                         focused = i
                         break
 
