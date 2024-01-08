@@ -1,5 +1,6 @@
 2024.01.08 (by @veksha)
 + add: enable tagSupport for publishDiagnostics (diagnostics will bring more hints)
+- fix: do not crash plugin on nimlangserver's bug related to WorkDoneProgress event
 
 2023.12.25 (by @veksha)
 + add: in Goto References dialog, preselect item which is equal to current line
