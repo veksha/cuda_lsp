@@ -435,6 +435,13 @@ class Client:
 
         elif request.method == "$/progress":
             progress_type = self._progress_tokens_map.get(request.params['token'])
+            
+            # if "window/workDoneProgress/create" request from server was missing -
+            # pretend it actually was already recieved. i think there is no harm in that.
+            # such server bugs must be silently ignored without crashing our plugin.
+            if progress_type is None:
+                self._progress_tokens_map[request.params['token']] = WorkDoneProgress
+                progress_type = WorkDoneProgress
 
             if progress_type == WorkDoneProgress:
                 kind = request.params['value']['kind']

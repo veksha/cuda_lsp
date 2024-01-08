@@ -1142,7 +1142,9 @@ class Language:
 
     def _on_progress(self, msg):
         if isinstance(msg, events.WorkDoneProgressCreate):
-            self.progresses[msg.token] = None
+            # on buggy servers token can already exist at this stage.
+            # such server bugs must be silently ignored without crashing our plugin.
+            self.progresses.setdefault(msg.token, None) # set to None ONLY if it desn't exist
             msg.reply()
 
         elif isinstance(msg, events.WorkDoneProgress):
