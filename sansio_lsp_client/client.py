@@ -88,7 +88,10 @@ CAPABILITIES = {
         },
 
         'publishDiagnostics': {
-            'relatedInformation': True
+            'relatedInformation': True,
+            'tagSupport': {
+                'valueSet': [1,2]
+            }
         },
 
         'completion': {
