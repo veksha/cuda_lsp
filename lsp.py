@@ -61,7 +61,7 @@ opt_hover_additional_commands = [
     "Type definition",
 ]
 opt_cudatext_in_py_env = False
-opt_lint_type = 'b'
+opt_lint_type = 'dc'
 opt_lint_underline_style = 2  # solid 0, dotted 1, dashes 2, wave 3
 opt_enable_code_tree = False
 opt_tree_types_show = ''
