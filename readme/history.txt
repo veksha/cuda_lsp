@@ -1,3 +1,6 @@
+2024.01.14 (by @veksha)
+- fix: some lsp servers can return None for certain values even when its against the LSP specs.
+
 2024.01.10 (by @veksha)
 - fix: changed lint_type default value to 'dc', because user may not want to use bookmarks for linting
 
