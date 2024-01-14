@@ -1801,7 +1801,7 @@ class CompletionMan:
             return False
         
     def filter(self, item, word):
-        s1 = item.get('filterText', item['label'])
+        s1 = item['label'] if item.get('filterText') is None else item.get('filterText')
         s2 = word
         pos_bracket = s1.find('(')
         s1 = s1 if pos_bracket == -1 else s1[:pos_bracket]
@@ -1970,11 +1970,13 @@ class CompletionMan:
 
         cached_x = self.carets[0][0]
         cached_x_diff = x0-cached_x
-        if 'textEdit' in item:
+        if item.get('textEdit') is not None:
             x1,y1,x2,y2 = EditorDoc.range2carets(item.get('textEdit')['range'])
             text = item.get('textEdit')['newText']
-        elif 'insertText' in item: text = item.get('insertText')
-        else:                      text = item.get('label')
+        elif item.get('insertText') is not None:
+            text = item.get('insertText')
+        else:
+            text = item.get('label')
         
         # useful logging (when DEBUG_COMPLETION is enabled)
         if DEBUG_COMPLETION:
@@ -1994,7 +1996,7 @@ class CompletionMan:
         CompletionMan.apply_completion_edit(edit)
         
         # additinal edits
-        if 'additionalTextEdits' in item:
+        if item.get('additionalTextEdits') is not None:
             for edit in item.get('additionalTextEdits'):
                 EditorDoc.apply_edit(ed, edit)
         return True
