@@ -32,7 +32,7 @@ from .util import (
 #import cuda_project_man
 #from .book import DocBook
 
-from .language import CompletionMan, Language
+from .language import CompletionMan, DiagnosticsMan, Language
 
 LOG = False
 LOG_NAME = 'LSP'
@@ -81,6 +81,7 @@ opt_semantic_colors_dark = '#E38F8F,#0f0,#EB67E0,#EB67E0,,,#FF2436,,#ffe226,#0ff
 
 opt_disabled_contexts = 'cs'
 opt_complete_from_text = False
+opt_diagnostics_in_a_corner = False
 
 """
 file:///install.inf
@@ -429,6 +430,11 @@ class Command:
     def on_caret_slow(self, ed_self):
         if SignaturesDialog.is_visible():
             self.on_func_hint(ed_self)
+        
+        if opt_diagnostics_in_a_corner:
+            doc = self.book.get_doc(ed_self)
+            if doc  and  doc.lang:
+                doc.lang.diagnostics_man.on_caret_slow(ed_self)
             
     def on_scroll(self, ed_self):
         if SignaturesDialog.is_visible():
@@ -765,6 +771,7 @@ class Command:
         global opt_semantic_colors_dark
         global opt_disabled_contexts
         global opt_complete_from_text
+        global opt_diagnostics_in_a_corner
 
         # general cfg
         if os.path.exists(fn_config):
@@ -805,6 +812,8 @@ class Command:
             Language.disabled_contexts = opt_disabled_contexts
             opt_complete_from_text = j.get('complete_from_text', opt_complete_from_text)
             Language.complete_from_text = opt_complete_from_text
+            opt_diagnostics_in_a_corner = j.get('diagnostics_in_a_corner', opt_diagnostics_in_a_corner)
+            DiagnosticsMan.opt_diagnostics_in_a_corner = opt_diagnostics_in_a_corner
             
             opt_enable_code_tree = j.get('enable_code_tree', opt_enable_code_tree)
             opt_tree_types_show = j.get('tree_types_show', opt_tree_types_show)
@@ -897,6 +906,7 @@ class Command:
             'semantic_colors_dark':      opt_semantic_colors_dark,
             'disabled_contexts':         opt_disabled_contexts,
             'complete_from_text':        opt_complete_from_text,
+            'diagnostics_in_a_corner':   opt_diagnostics_in_a_corner,
         }
         if opt_manual_didopen is not None:
             j['manual_didopen'] = opt_manual_didopen

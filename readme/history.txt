@@ -1,3 +1,6 @@
+2024.01.24 (by @veksha)
++ add: new option: diagnostics_in_a_corner - show diagnostics for current line in a corner of editor
+
 2024.01.23 (by @veksha)
 - fix: hover (hint) dialog height was calculated incorrectly for high DPI.
 

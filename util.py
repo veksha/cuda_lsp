@@ -1,5 +1,6 @@
 import os
 import pathlib
+import re
 
 import cudatext as ct
 import cudax_lib as appx
@@ -142,6 +143,31 @@ def replace_unbracketed(s, target_char, repl, brackets):
 
         result += c
     return result
+
+def split_text_by_length(text, max_length, prepare_for_corner=False):
+    lines_out = []
+    for line in text.split('\n'):
+        if prepare_for_corner:
+            line = re.sub(r"^\[.*?Err.*?\]:\s*" , "⛔️ ", line) 
+            line = re.sub(r"^\[.*?Wrn.*?\]:\s*" , "⚠️ ", line) 
+            line = re.sub(r"^\[.*?Inf.*?\]:\s*" , "ℹ️ ", line) 
+            line = re.sub(r"^\[.*?Hint.*?\]:\s*", "📜️ ", line) 
+        words = line.split()
+        parts = []
+        current_part = ''
+        for word in words:
+            if len(current_part) + len(word) <= max_length:
+                if current_part:
+                    current_part += ' ' + word
+                else:
+                    current_part = word
+            else:
+                parts.append(current_part)
+                current_part = word
+        if current_part:
+            parts.append(current_part)
+        lines_out.extend(parts)
+    return '\n'.join(lines_out)
 
 
 class TimerScheduler:
