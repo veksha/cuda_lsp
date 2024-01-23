@@ -167,8 +167,11 @@ class Hint:
         caret_loc_px = ed.convert(CONVERT_CARET_TO_PIXELS, x=caret[0], y=caret[1])
         top_hint = caret_loc_px[1]-t > b-caret_loc_px[1] # space up is larger than down
         y0,y1 = (t, caret_loc_px[1])  if top_hint else  (caret_loc_px[1], b)
-        h = min(FORM_H,  y1-y0 - FORM_GAP*2 - cell_h)
-        w = min(FORM_W, ed_size_x)
+        space_h = y1-y0 - FORM_GAP*2
+        if not top_hint:
+            space_h -= cell_h
+        h = min(FORM_H * _scale_UI_percent // 100, space_h)
+        w = min(FORM_W * _scale_UI_percent // 100, ed_size_x)
 
         x = caret_loc_px[0] - int(w*0.5) # center over caret
         if x < l: # dont fit on left
@@ -186,13 +189,13 @@ class Hint:
                 'p': ed.get_prop(PROP_HANDLE_SELF ), #set parent to Editor handle
                 'x': x,
                 'y': y,
-                'w': w * _scale_UI_percent // 100,
-                'h': h * _scale_UI_percent // 100,
+                'w': w,
+                'h': h,
                 })
 
         cls.caret_cmds = caret_cmds
         if caret_cmds:
-            cls.fill_cmds(caret_cmds, w)
+            cls.fill_cmds(caret_cmds, min(FORM_W, ed_size_x))
 
         # first - large delay, after - smaller
         timer_proc(TIMER_START_ONE, Hint.hide_check_timer, 750, tag='initial')
