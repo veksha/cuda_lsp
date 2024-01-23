@@ -1,3 +1,6 @@
+2024.01.23 (by @veksha)
+- fix: hover (hint) dialog height was calculated incorrectly for high DPI.
+
 2024.01.14 (by @veksha)
 - fix: some lsp servers can return None for certain values even when its against the LSP specs.
 
