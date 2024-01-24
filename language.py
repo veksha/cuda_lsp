@@ -26,6 +26,7 @@ from .util import (
         get_visible_eds,
         get_word,
         get_nonwords_chars,
+        split_text_by_length,
         uri_to_path,
         path_to_uri,
         langid2lex,
@@ -1251,6 +1252,8 @@ class DiagnosticsMan:
     LINT_NONE = 100
     LINT_BOOKMARK = 101
     LINT_DECOR = 102
+    
+    opt_diagnostics_in_a_corner = False
 
     def __init__(self, lintstr=None, underline_style=2, logger=None):
         self.logger=logger
@@ -1384,8 +1387,31 @@ class DiagnosticsMan:
 
                 ed.attr(MARKERS_ADD_MANY,  tag=DIAG_BM_TAG,  x=xs,  y=ys,  len=lens,
                             color_border=err_col,  border_down=self._underline_style)
+        if self.opt_diagnostics_in_a_corner:
+            self.on_caret_slow(ed)
 
+    def on_caret_slow(self, ed_self):
+        y = ed_self.get_carets()[0][1]
+        decor_list = ed_self.decor(DECOR_GET_ALL, y)
+        decor_found = False
+        if isinstance(decor_list, list) and len(decor_list) > 0:
+            for d in decor_list:
+                if d['tag'] == DIAG_BM_TAG and d['line'] == y:
+                    decor_found = True
+                    text = d['text']
+                    text = text.split('\1')[1] if '\1' in text else text
+                    text = split_text_by_length(text, 50, prepare_for_corner=True)
+                    
+                    ed_self.set_prop(PROP_CORNER_FONT_NAME, 'default')
+                    font_size_opt = 'font_size'+app_proc(PROC_GET_OS_SUFFIX, '')
+                    ed_self.set_prop(PROP_CORNER_FONT_SIZE, appx.get_opt(font_size_opt, 10)+3)
 
+                    ed_self.set_prop(PROP_CORNER_COLOR_BACK, appx.html_color_to_int('ffffe1'))
+                    ed_self.set_prop(PROP_CORNER_COLOR_BORDER, appx.html_color_to_int('aaa'))
+                    ed_self.set_prop(PROP_CORNER_TEXT, text)
+        if not decor_found:
+            ed_self.set_prop(PROP_CORNER_TEXT, '')
+    
     def _get_gutter_data(self, diag_list):
         line_diags = defaultdict(list) # line -> list of diagnostics
         for d in diag_list:
