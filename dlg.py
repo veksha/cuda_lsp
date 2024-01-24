@@ -1,6 +1,7 @@
 import os
 import re
 from collections import namedtuple, defaultdict
+from ctypes import *
 
 from cudatext import *
 #import cudatext as ct
@@ -248,10 +249,30 @@ class Hint:
         if not cls.is_visible(): #stop the timer if dialog was already closed (could be closed by autocompletion)
             timer_proc(TIMER_STOP, Hint.hide_check_timer, 250, tag='')
         elif not is_mouse_in_form(cls.h) and cursor_dist(cls.cursor_pos) > cls.cursor_margin:
-            timer_proc(TIMER_STOP, Hint.hide_check_timer, 250, tag='')
-
-            cls.hide()
-            ed.focus()
+            
+            left_button = False
+            try:
+                # code for linux only, X Window System
+                # gets state of left mouse button (down/up)
+                Xlib = CDLL("libX11.so.6")
+                display = Xlib.XOpenDisplay(None)
+                if display != 0:
+                    w = Xlib.XRootWindow(display, c_int(0))
+                    (root_id, child_id) = (c_uint32(), c_uint32())
+                    (root_x, root_y, win_x, win_y) = (c_int(), c_int(), c_int(), c_int())
+                    mask = c_uint()
+                    ret = Xlib.XQueryPointer(display, c_uint32(w), byref(root_id), byref(child_id),
+                                             byref(root_x), byref(root_y),
+                                             byref(win_x), byref(win_y), byref(mask))
+                    if ret != 0:
+                        left_button = (mask.value & 256) != 0
+            except:
+                pass
+            
+            if not left_button:
+                timer_proc(TIMER_STOP, Hint.hide_check_timer, 250, tag='')
+                cls.hide()
+                ed.focus()
 
         if tag == 'initial': # give some time to move mouse to dialog
             timer_proc(TIMER_START, Hint.hide_check_timer, 250, tag='')
