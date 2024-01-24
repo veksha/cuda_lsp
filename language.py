@@ -1387,7 +1387,7 @@ class DiagnosticsMan:
 
                 ed.attr(MARKERS_ADD_MANY,  tag=DIAG_BM_TAG,  x=xs,  y=ys,  len=lens,
                             color_border=err_col,  border_down=self._underline_style)
-        if self.opt_diagnostics_in_a_corner:
+        if self.opt_diagnostics_in_a_corner and api_ver >= '1.0.452':
             self.on_caret_slow(ed)
 
     def on_caret_slow(self, ed_self):

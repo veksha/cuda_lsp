@@ -83,6 +83,8 @@ opt_disabled_contexts = 'cs'
 opt_complete_from_text = False
 opt_diagnostics_in_a_corner = False
 
+api_ver = app_api_version()
+
 """
 file:///install.inf
 file:///book.py
@@ -431,7 +433,7 @@ class Command:
         if SignaturesDialog.is_visible():
             self.on_func_hint(ed_self)
         
-        if opt_diagnostics_in_a_corner:
+        if opt_diagnostics_in_a_corner and api_ver >= '1.0.452':
             doc = self.book.get_doc(ed_self)
             if doc  and  doc.lang:
                 doc.lang.diagnostics_man.on_caret_slow(ed_self)
