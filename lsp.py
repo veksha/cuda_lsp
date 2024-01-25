@@ -203,7 +203,9 @@ def get_server_cfg_fns():
 class Command:
 
     def __init__(self):
-        self.is_loading_sesh = False
+        self.is_loading_sesh = False # is this broken when on_state~ is lazy?
+        self.sesh_is_loaded = False # better use this instead of above
+        
         # editors not on_open'ed durisg sesh-load;  on_open visibles when sesh loaded
         self._sesh_eds = []
         self._langs = {} # langid -> Language
@@ -280,10 +282,15 @@ class Command:
     #NOTE also gets called for unsaved from session
     def on_open(self, ed_self):
         if not self.is_loading_sesh:
-            # there was a bug: if on startup second tab is active
-            # LSP server is still started for 1st (inactive) tab and 2nd tab too.
-            # using timer here fixes this issue
-            timer_proc(TIMER_START_ONE, lambda *args: self._do_on_open(ed_self), 500)
+            
+            self._sesh_eds.append(ed_self)
+                
+            if self.sesh_is_loaded:
+                # on_open for delayed
+                eds = self._sesh_eds[:]
+                self._sesh_eds.clear()
+                for editor in eds:
+                    self._do_on_open(editor)
         else: # sesh is loading - delay
             self._sesh_eds.append(ed_self)
 
@@ -478,6 +485,7 @@ class Command:
 
         elif state in [APPSTATE_SESSION_LOAD_FAIL, APPSTATE_SESSION_LOAD]: # ended
             self.is_loading_sesh = False
+            self.sesh_is_loaded = True
             # on_open for delayed
             eds = self._sesh_eds[:]
             self._sesh_eds.clear()
