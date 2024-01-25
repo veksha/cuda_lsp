@@ -204,7 +204,6 @@ class Command:
 
     def __init__(self):
         self.is_loading_sesh = False # is this broken when on_state~ is lazy?
-        self.sesh_is_loaded = False # better use this instead of above
         
         # editors not on_open'ed durisg sesh-load;  on_open visibles when sesh loaded
         self._sesh_eds = []
@@ -282,15 +281,7 @@ class Command:
     #NOTE also gets called for unsaved from session
     def on_open(self, ed_self):
         if not self.is_loading_sesh:
-            
-            self._sesh_eds.append(ed_self)
-                
-            if self.sesh_is_loaded:
-                # on_open for delayed
-                eds = self._sesh_eds[:]
-                self._sesh_eds.clear()
-                for editor in eds:
-                    self._do_on_open(editor)
+            self._do_on_open(ed_self)
         else: # sesh is loading - delay
             self._sesh_eds.append(ed_self)
 
@@ -485,7 +476,6 @@ class Command:
 
         elif state in [APPSTATE_SESSION_LOAD_FAIL, APPSTATE_SESSION_LOAD]: # ended
             self.is_loading_sesh = False
-            self.sesh_is_loaded = True
             # on_open for delayed
             eds = self._sesh_eds[:]
             self._sesh_eds.clear()
