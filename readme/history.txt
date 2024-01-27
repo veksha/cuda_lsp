@@ -1,3 +1,6 @@
+2024.01.27 (by @veksha)
++ add: do not hide the Hover window while the user is holding the mouse button and if the user releases the button, provide an opportunity for him to return the cursor to the window.
+
 2024.01.24 (by @veksha)
 + add: new option: diagnostics_in_a_corner - show diagnostics for current line in a corner of editor
 
