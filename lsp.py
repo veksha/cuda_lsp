@@ -483,6 +483,9 @@ class Command:
                 self._do_on_open(editor)
 
         elif state == APPSTATE_PROJECT:
+            for name,lang in list(self._langs.items()):
+                lang.plog.clear()
+            
             new_project_dir = get_project_dir()
             if self._project_dir != new_project_dir  and  self._langs:
                 _collapsed_path = collapse_path(new_project_dir)
@@ -493,11 +496,14 @@ class Command:
                     if not handled:
                         self.shutdown_server(name=name)
 
-                # on_open visible eds/docs without lang
-                for edt in get_visible_eds():
-                    doc = self.book.get_doc(edt)
-                    if not doc  or  not doc.lang:
-                        self.on_open(edt)
+                ### == this code block can launch same server again after we triggered shutdown of it above.
+                ### == that's bad.
+                ## on_open visible eds/docs without lang
+                #for edt in get_visible_eds():
+                #    doc = self.book.get_doc(edt)
+                #    if not doc  or  not doc.lang:
+                #        self.on_open(edt)
+                ### ==
 
         elif state == APPSTATE_THEME_UI:
             from .dlg import PanelLog
