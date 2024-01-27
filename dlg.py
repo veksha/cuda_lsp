@@ -115,6 +115,11 @@ class Hint:
 
         dlg_proc(h, DLG_SCALE)
         return h, edt
+        
+    @classmethod
+    def set_cursor_margin(cls, cursor_move_tolerance):
+        _scale_UI_percent, _scale_font_percent = app_proc(PROC_CONFIG_SCALE_GET, '')
+        cls.cursor_margin = cursor_move_tolerance * _scale_UI_percent*0.01 # ~30px scaled
 
     # language - from deprecated 'MarkedString'
     @classmethod
@@ -134,8 +139,8 @@ class Hint:
 
         cls.current_caret = caret # for 'Go to Definition'
         cls.cursor_pos = app_proc(PROC_GET_MOUSE_POS, '')
-        _scale_UI_percent, _scale_font_percent = app_proc(PROC_CONFIG_SCALE_GET, '')
-        cls.cursor_margin = CURSOR_MOVE_TOLERANCE * _scale_UI_percent*0.01 # ~30px scaled
+        cls.tolerance = CURSOR_MOVE_TOLERANCE
+        cls.set_cursor_margin(cls.tolerance)
 
         ### dont show dialog if cursor moved from request-position
         _glob_cursor_start = ed.convert(CONVERT_LOCAL_TO_SCREEN, *cursor_loc_start)
@@ -170,6 +175,7 @@ class Hint:
         space_h = y1-y0 - FORM_GAP*2
         if not top_hint:
             space_h -= cell_h
+        _scale_UI_percent, _scale_font_percent = app_proc(PROC_CONFIG_SCALE_GET, '')
         h = min(FORM_H * _scale_UI_percent // 100, space_h)
         w = min(FORM_W * _scale_UI_percent // 100, ed_size_x)
 
@@ -245,13 +251,31 @@ class Hint:
     @classmethod
     def hide_check_timer(cls, tag='', info=''):
         # hide if not over dialog  and  cursor moved at least ~15px
+        left_button_down = 'L' in app_proc(PROC_GET_KEYSTATE, '')
+        
+        # give the user possibility to return cursor to Hint window
+        # decrease by 50 every time to a minimum of CURSOR_MOVE_TOLERANCE value
+        cls.tolerance = max(CURSOR_MOVE_TOLERANCE, cls.tolerance-50)
+        if left_button_down:
+            cls.tolerance = 500
+        # reset when value gets to 300
+        if cls.tolerance == 300:
+            cls.tolerance = CURSOR_MOVE_TOLERANCE # 30
+        # update cursor_margin
+        if cls.cursor_margin != cls.tolerance:
+            cls.set_cursor_margin(cls.tolerance)
+        
         if not cls.is_visible(): #stop the timer if dialog was already closed (could be closed by autocompletion)
             timer_proc(TIMER_STOP, Hint.hide_check_timer, 250, tag='')
-        elif not is_mouse_in_form(cls.h) and cursor_dist(cls.cursor_pos) > cls.cursor_margin:
+        elif not is_mouse_in_form(cls.h) \
+             and cursor_dist(cls.cursor_pos) > cls.cursor_margin \
+             and not left_button_down:
             timer_proc(TIMER_STOP, Hint.hide_check_timer, 250, tag='')
 
             cls.hide()
             ed.focus()
+        else:
+            cls.cursor_pos = app_proc(PROC_GET_MOUSE_POS, '')                
 
         if tag == 'initial': # give some time to move mouse to dialog
             timer_proc(TIMER_START, Hint.hide_check_timer, 250, tag='')
