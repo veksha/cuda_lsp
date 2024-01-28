@@ -131,6 +131,7 @@ class Language:
     
     def __init__(self, cfg, cmds=None, lintstr='', underline_style=None, state=None):
         self._shutting_down = None  # scheduled shutdown when not yet initialized
+        self.shutdown_start_time = None
 
         self._last_complete = None
         self._cfg = cfg
@@ -179,7 +180,7 @@ class Language:
 
         self._closed = False
         self.sock = None
-        self.process = None
+        self.process: subprocess.Popen = None
         
         self._reader = None
         self._writer = None
@@ -372,6 +373,8 @@ class Language:
                     del header_bytes
         #except (AttributeError, BrokenPipeError, TypeError) as ex:
             #print("ExpectedException: ? " + str(ex))
+        except ChildProcessError:
+            print(f'{LOG_NAME}: {self.lang_str} - process exited')
         except Exception as ex:
             print(f'ReadLoopError: {LOG_NAME}: {self.lang_str} - {ex}')
         self._send_q.put_nowait(None) # stop send_loop()
@@ -400,6 +403,14 @@ class Language:
             if self._shutting_down:
                 self.shutdown()
                 self._shutting_down = False
+            elif self.shutdown_start_time is not None:
+                shutdown_time = time.time() - self.shutdown_start_time
+                if shutdown_time > 5:
+                    self.shutdown_start_time = None
+                    if self.process and self.process.poll() is None:
+                        print(f'{LOG_NAME}: {self.lang_str}[{self.client_state_str}] - force shutdown')
+                        self.process.kill()
+                    self.exit(process_queues=False)
 
             # read Queue
             errors = []
@@ -597,7 +608,8 @@ class Language:
             print(f'{LOG_NAME}: {self.lang_str}[{self.client_state_str}] - got shutdown response, exiting')
             self.client.exit()
             self.process_queues()
-            self.exit()
+            self.shutdown_start_time = time.time()
+            #self.exit()
 
         else:
             print(f'{LOG_NAME}: {self.lang_str} - unknown Message type: {msgtype}')
@@ -1126,13 +1138,16 @@ class Language:
         pass;       LOG and print('-- lang - shutting down')
         if self.client.is_initialized:
             self.client.shutdown()
+            pass;       LOG and print(f'{LOG_NAME}: {self.lang_str}[{self.client_state_str}] - sent shutdown request')
+            self.shutdown_start_time = time.time()
         else:
             self._shutting_down = True
 
-    def exit(self):
+    def exit(self, process_queues=True):
         if not self._closed:
             self._send_q.put_nowait(None) # stop send_loop()
-            self.process_queues()
+            if process_queues:
+                self.process_queues()
 
             if self.sock:
                 self.sock.close()
