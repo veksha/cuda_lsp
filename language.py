@@ -1017,10 +1017,10 @@ class Language:
             if ed.get_filename() == '' and fn == tab_title:
                 ed.set_caret(*target_caret)
                 ed.set_prop(PROP_LINE_TOP, target_line)
-                return
             else:
                 print('NOTE: ' + _('{}: {} - file does not exist: {!r}, uri:{!r}').format(
                         LOG_NAME, self.lang_str, targetpath, uri))
+            return
 
         # open file:  in embedded first
         try:
