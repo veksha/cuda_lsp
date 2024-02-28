@@ -1,3 +1,6 @@
+2024.02.27 (by @veksha)
++ add: support for initializationOptions
+
 2024.01.28 (by @veksha)
 - fix: force server shutdown if no response to shutdown request for 5 secs. (fix for nimlangserver)
 - fix: commented out block of code that can launch the same server again just after we triggered shutdown of it. happens on project switching.

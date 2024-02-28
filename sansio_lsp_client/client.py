@@ -233,6 +233,7 @@ class Client:
                 "workspaceFolders": workspace_folders,
                 "trace": trace,
                 "capabilities": CAPABILITIES,
+                "initializationOptions": settings,
             },
         )
         self._state = ClientState.WAITING_FOR_INITIALIZED
