@@ -112,7 +112,8 @@ Another example. Python server "Jedi" gives server-specific option
 to disable 'snippets' insertion by auto-completion. When 'snippets' are
 disabled, auto-completion inserts only simple text, and if 'snippets' are
 enabled, auto-completion inserts full-featured snippets, like plugin
-Snippet does, with red-triangle 'markers' (for snippets which have markers).
+Snippets does, with red-triangle 'markers' (for snippets which have markers).
+Some users may want to disable 'snippets' because 'markers' are irritating.
 To disable 'snippets', write in lsp_*.json file:
 
   "settings": {
