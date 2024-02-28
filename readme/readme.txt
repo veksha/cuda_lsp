@@ -107,7 +107,18 @@ You can also use dot-path notation to specify sections in simple format:
     "python.analysis.typeCheckingMode": "off",
   }
   ...
- 
+
+Another example. Python server "Jedi" gives server-specific option
+to disable 'snippets' insertion by auto-completion. When 'snippets' are
+disabled, auto-completion inserts only simple text, and if 'snippets' are
+enabled, auto-completion inserts full-featured snippets, like plugin
+Snippet does, with red-triangle 'markers' (for snippets which have markers).
+To disable 'snippets', write in lsp_*.json file:
+
+  "settings": {
+      "completion.disableSnippets": true,
+  }
+
 
 Plugin options
 --------------
