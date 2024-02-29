@@ -81,6 +81,7 @@ opt_semantic_colors_dark = '#E38F8F,#0f0,#EB67E0,#EB67E0,,,#FF2436,,#ffe226,#0ff
 
 opt_disabled_contexts = 'cs'
 opt_complete_from_text = False
+opt_use_markers=True
 opt_diagnostics_in_a_corner = False
 
 api_ver = app_api_version()
@@ -776,6 +777,7 @@ class Command:
         global opt_semantic_colors_light
         global opt_semantic_colors_dark
         global opt_disabled_contexts
+        global opt_use_markers
         global opt_complete_from_text
         global opt_diagnostics_in_a_corner
 
@@ -806,6 +808,10 @@ class Command:
             CompletionMan.hard_filter = opt_hard_filter
             opt_use_cache = j.get('use_cache', opt_use_cache)
             CompletionMan.use_cache = opt_use_cache
+            
+            opt_use_markers = j.get('use_markers', opt_use_markers)
+            CompletionMan.use_markers = opt_use_markers
+            
             opt_servers_shutdown_max_time = j.get('servers_shutdown_max_time', opt_servers_shutdown_max_time)
             
             opt_enable_semantic_tokens = j.get('enable_semantic_tokens', opt_enable_semantic_tokens)
@@ -912,6 +918,7 @@ class Command:
             'semantic_colors_dark':      opt_semantic_colors_dark,
             'disabled_contexts':         opt_disabled_contexts,
             'complete_from_text':        opt_complete_from_text,
+            'use_markers':               opt_use_markers,
             'diagnostics_in_a_corner':   opt_diagnostics_in_a_corner,
         }
         if opt_manual_didopen is not None:

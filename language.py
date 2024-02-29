@@ -1721,6 +1721,7 @@ class CompletionMan:
     auto_append_bracket = True
     hard_filter = False
     use_cache = True
+    use_markers=True
     
     def __init__(self, lang, carets=None, h_ed=None):
         assert len(carets) == 1, 'no autocomplete for multi-carets'
@@ -1793,7 +1794,7 @@ class CompletionMan:
         
         # insert completion
         if edit.is_snippet:
-            snippet = Snippet(text=text.split('\n'), t=VS_SNIPPET)
+            snippet = Snippet(text=text.split('\n'), t=VS_SNIPPET, use_markers=CompletionMan.use_markers)
             snippet.insert(ed, replace_from=x1, replace_to=x2)
         else:
             new_caret = ed.replace(x1, edit.y, x2, edit.y, text)
