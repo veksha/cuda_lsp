@@ -86,6 +86,8 @@
 
 * disabled_contexts - how to disable auto-completion in "comments" and "strings" for all servers. If "c" in value - disable in "comments", if "s" in value - disable in "strings". Can be overriden in server config.
 
+* use_markers - whether to show markers (the little red triangles) when showing autocompletion snippets
+
 * complete_from_text - include autocomplete results from "Complete From Text" plugin.
 
 * diagnostics_in_a_corner - show diagnostics for current line in a corner of editor.

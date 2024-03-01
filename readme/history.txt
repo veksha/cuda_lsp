@@ -1,3 +1,6 @@
+2024.03.01 (by @DUOLabs333)
++ add: new config option to disable markers when adding snippets
+
 2024.02.27 (by @veksha)
 + add: support for initializationOptions
 
