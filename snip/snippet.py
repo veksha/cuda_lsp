@@ -125,14 +125,15 @@ class VariableState:
 
 class Snippet:
     """Base snippet class."""
-    __slots__ = ['name', 'id', 'lex', 'text', 'type']
+    __slots__ = ['name', 'id', 'lex', 'text', 'type', 'use_markers']
 
-    def __init__(self, name='', id: typing.List = '', lex='', text=None, t=0):
+    def __init__(self, name='', id: typing.List = '', lex='', text=None, t=0, use_markers=True):
         self.name = name
         self.id = id if isinstance(id, list) else [id]
         self.lex = lex
         self.text = [text] if isinstance(text, str) else text
         self.type = t
+        self.use_markers=use_markers
 
     @property
     def _name(self):
@@ -248,31 +249,32 @@ class Snippet:
             ed.markers(**m)
         for m in old_markers:
             ed.markers(**m)
-
-        # insert new markers
-        for m in zero_markers:
-            ed.markers(**m)
-            mark_placed = True
-        for m in markers:
-            ed.markers(**m)
-            mark_placed = True
-
-        # this only for new marks
-        if mark_placed:
-            ed.set_prop(ct.PROP_TAB_COLLECT_MARKERS, '1')
-            ed.cmd(cudatext_cmd.cmd_Markers_GotoLastAndDelete)
-        else:
-            # place caret after text
-            if s_text:
-                lines_cnt = 0
-                for s in s_text:
-                    lines_cnt += len(s.splitlines())
-                lines_last = s_text[-1].splitlines()
-                new_x = len(lines_last[-1])
-                if lines_cnt == 1:
-                    new_x += x0
-                new_y = y0 + lines_cnt - 1
-                ed.set_caret(new_x, new_y)
+        
+        if self.use_markers:
+            # insert new markers
+            for m in zero_markers:
+                ed.markers(**m)
+                mark_placed = True
+            for m in markers:
+                ed.markers(**m)
+                mark_placed = True
+    
+            # this only for new marks
+            if mark_placed:
+                ed.set_prop(ct.PROP_TAB_COLLECT_MARKERS, '1')
+                ed.cmd(cudatext_cmd.cmd_Markers_GotoLastAndDelete)
+            else:
+                # place caret after text
+                if s_text:
+                    lines_cnt = 0
+                    for s in s_text:
+                        lines_cnt += len(s.splitlines())
+                    lines_last = s_text[-1].splitlines()
+                    new_x = len(lines_last[-1])
+                    if lines_cnt == 1:
+                        new_x += x0
+                    new_y = y0 + lines_cnt - 1
+                    ed.set_caret(new_x, new_y)
 
     @staticmethod
     def parse_vars_vs(v, sn):
